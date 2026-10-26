@@ -28,6 +28,7 @@ local LINE = Color3.fromRGB(54, 49, 78)
 local OFF = Color3.fromRGB(58, 56, 76)
 local SUB = Color3.fromRGB(150, 148, 178)
 local W = Color3.new(1, 1, 1)
+local BLURPLE = Color3.fromRGB(88, 101, 242)
 local FB, FM = Enum.Font.GothamBold, Enum.Font.GothamMedium
 
 local mobile = UIS.TouchEnabled and not UIS.MouseEnabled
@@ -35,7 +36,7 @@ local draw = false
 pcall(function() draw = Drawing ~= nil and Drawing.new ~= nil end)
 
 local C = {Aim = false, AimHold = false, Part = "Cabeca", TeamCheck = false, WallCheck = false, ShowFOV = false,
-	FOV = 150, AimSpeed = 10, Line = false, Skel = false, Box = false, Name = false, Health = false,
+	FOV = 150, AimSpeed = 15, Line = false, Skel = false, Box = false, Name = false, Health = false,
 	Dist = false, ECol = "Roxo", ESPTeam = false, Walk = false, WalkVal = 32, Jump = false,
 	JumpVal = 100, InfJump = false, Noclip = false, Fly = false, FlyVal = 60, Bright = false,
 	CamOn = false, CamFOV = 70, CamDist = false, CamDistVal = 30, AFK = false}
@@ -130,10 +131,16 @@ local tl = T(Bar, "", UDim2.new(0, 14, 0, 0), UDim2.new(0, 110, 1, 0), FB, 16, W
 tl.RichText = true
 tl.Text = 'NETRIX <font color="rgb(170,115,255)">HUB</font>'
 T(Bar, "UNIVERSAL  •  v8", UDim2.new(0, 118, 0, 2), UDim2.new(0, 140, 1, 0), FM, 10, SUB)
-local X = N("TextButton", {Text = "✕", Font = FB, TextSize = 13, TextColor3 = SUB, BackgroundTransparency = 1,
-	AutoButtonColor = false, Size = UDim2.new(0, 40, 0, 40), Position = UDim2.new(1, -40, 0, 0)}, Bar)
-X.MouseEnter:Connect(function() tw(X, 0.12, {TextColor3 = Color3.fromRGB(255, 90, 110)}) end)
-X.MouseLeave:Connect(function() tw(X, 0.12, {TextColor3 = SUB}) end)
+local X = R(N("TextButton", {Text = "", BackgroundColor3 = PANEL2, BackgroundTransparency = 0.1,
+	AutoButtonColor = false, Size = UDim2.new(0, 28, 0, 28), Position = UDim2.new(1, -38, 0, 6),
+	BorderSizePixel = 0}, Bar), 8)
+stroke(X, LINE, 1, 0.2)
+for _, rot in ipairs({45, -45}) do
+	R(N("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0),
+		Size = UDim2.new(0, 14, 0, 2), Rotation = rot, BackgroundColor3 = W, BorderSizePixel = 0}, X), 1)
+end
+X.MouseEnter:Connect(function() tw(X, 0.12, {BackgroundColor3 = Color3.fromRGB(225, 65, 90), BackgroundTransparency = 0}) end)
+X.MouseLeave:Connect(function() tw(X, 0.12, {BackgroundColor3 = PANEL2, BackgroundTransparency = 0.1}) end)
 local hl = N("Frame", {Size = UDim2.new(1, -20, 0, 1), Position = UDim2.new(0, 10, 0, 40), BackgroundColor3 = W,
 	BorderSizePixel = 0}, Main)
 N("UIGradient", {Color = ColorSequence.new(AC, Color3.fromRGB(35, 30, 55))}, hl)
@@ -282,11 +289,37 @@ local function pick(pg, txt, opts, key)
 	end)
 end
 
+-- icone quadrado do Discord (se tiver o ID da imagem, coloque aqui entre aspas: "rbxassetid://...")
+local DISCORD_ICON = ""
+local function discordIcon(par, px, pos)
+	local rad = math.floor(px * 0.28)
+	local f = R(N("Frame", {Size = UDim2.new(0, px, 0, px), Position = pos, BackgroundColor3 = BLURPLE,
+		BorderSizePixel = 0}, par), rad)
+	if DISCORD_ICON ~= "" then
+		R(N("ImageLabel", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Image = DISCORD_ICON,
+			ScaleType = Enum.ScaleType.Crop}, f), rad)
+	else
+		local body = R(N("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0),
+			Size = UDim2.new(0.66, 0, 0.5, 0), BackgroundColor3 = W, BorderSizePixel = 0}, f), math.floor(px * 0.2))
+		for _, x in ipairs({0.3, 0.7}) do
+			R(N("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(x, 0, 0.5, 0),
+				Size = UDim2.new(0.18, 0, 0.3, 0), BackgroundColor3 = BLURPLE, BorderSizePixel = 0}, body),
+				math.floor(px * 0.1))
+		end
+	end
+	return f
+end
+
 local A = tab("Aim", "AIM")
 local E = tab("ESP", "ESP")
 local P = tab("Player", "PLAYER")
 local M = tab("Misc", "MISC")
 local D = tab("Discord", "DISCORD")
+do
+	local dtb = tabs["Discord"].b
+	dtb.UIPadding.PaddingLeft = UDim.new(0, 32)
+	discordIcon(dtb, 16, UDim2.new(0, -20, 0.5, -8))
+end
 
 sec(A, "Mira")
 toggle(A, "Ativar Aimbot", "Aim")
@@ -324,7 +357,7 @@ toggle(P, "Fly", "Fly")
 slider(P, "Velocidade do Fly", 20, 200, "FlyVal")
 
 sec(M, "Camera")
-toggle(M, "Camera distante", "CamDist")
+toggle(M, "Camera distante (zoom)", "CamDist")
 slider(M, "Distancia da camera", 10, 300, "CamDistVal")
 toggle(M, "Alterar FOV da camera", "CamOn")
 slider(M, "FOV da camera", 30, 120, "CamFOV")
@@ -337,7 +370,6 @@ btn(M, "Fechar hub", "FECHAR", Color3.fromRGB(210, 60, 90), function() Gui:Destr
 -- ---------- aba Discord ----------
 local DISCORD = "https://discord.gg/yQyvXYM2CK"
 local DCODE = "yQyvXYM2CK"
-local BLURPLE = Color3.fromRGB(88, 101, 242)
 
 local function copyLink()
 	return (pcall(function() setclipboard(DISCORD) end))
@@ -374,8 +406,9 @@ N("UIGradient", {Color = ColorSequence.new(Color3.fromRGB(8, 6, 16)), Rotation =
 local badge = R(N("Frame", {Size = UDim2.new(0, 64, 0, 18), Position = UDim2.new(0, 12, 0, 10),
 	BackgroundColor3 = BLURPLE, BorderSizePixel = 0}, banner), 5)
 T(badge, "DISCORD", UDim2.new(), UDim2.new(1, 0, 1, 0), FB, 9, W, Enum.TextXAlignment.Center)
-T(banner, "NETRIX HUB", UDim2.new(0, 14, 1, -52), UDim2.new(1, -28, 0, 28), FB, 24, W)
-T(banner, "COMUNIDADE OFICIAL", UDim2.new(0, 14, 1, -26), UDim2.new(1, -28, 0, 16), FM, 10, AC2)
+discordIcon(banner, 44, UDim2.new(0, 14, 1, -60))
+T(banner, "NETRIX HUB", UDim2.new(0, 68, 1, -54), UDim2.new(1, -82, 0, 28), FB, 24, W)
+T(banner, "COMUNIDADE OFICIAL", UDim2.new(0, 68, 1, -26), UDim2.new(1, -82, 0, 16), FM, 10, AC2)
 
 -- vantagens
 local perks = {"Scripts novos", "Suporte", "Atualizacoes"}
@@ -427,11 +460,14 @@ local function setOpen(v)
 		task.delay(0.14, function() if not open then Main.Visible = false end end)
 	end
 end
-X.MouseButton1Click:Connect(function() setOpen(false) end)
+X.MouseButton1Click:Connect(function()
+	setOpen(false)
+	note("Painel escondido. Toque na imagem para abrir de novo.")
+end)
 
 -- botao flutuante (quadrado arredondado, sem borda)
 local Fl = R(N("ImageButton", {Size = UDim2.new(0, 58, 0, 58), Position = UDim2.new(0, 16, 0.5, -29),
-	BackgroundTransparency = 1, BorderSizePixel = 0, Image = IMG, ScaleType = Enum.ScaleType.Crop,
+BackgroundTransparency = 1, BorderSizePixel = 0, Image = IMG, ScaleType = Enum.ScaleType.Crop,
 	AutoButtonColor = false, ZIndex = 50}, Gui), 16)
 local FlScale = N("UIScale", {Scale = 1}, Fl)
 Fl.MouseEnter:Connect(function() tw(FlScale, 0.15, {Scale = 1.1}) end)
@@ -531,11 +567,22 @@ local function aim(dt)
 		return
 	end
 	local t = target(center())
-	if t then
+	if not t then return end
+
+	-- 15 a 20 = trava total; abaixo disso, mira suave
+	local a = 1
+	if C.AimSpeed < 15 then a = 1 - math.exp(-C.AimSpeed * 9 * dt) end
+	a = math.clamp(a, 0.05, 1)
+
+	if not mobile and mousemoverel and UIS.MouseBehavior == Enum.MouseBehavior.LockCenter then
+		-- jogos com mouse travado no centro (camera propria): move o mouse ate o alvo
+		local pos = Cam:WorldToViewportPoint(t.Position)
+		local c0 = Cam.ViewportSize / 2
+		local g = math.min(a, 0.6)
+		mousemoverel((pos.X - c0.X) * g, (pos.Y - c0.Y) * g)
+	else
 		local goal = CFrame.new(Cam.CFrame.Position, t.Position)
-		local a = 1
-		if C.AimSpeed < 20 then a = 1 - math.exp(-C.AimSpeed * 4.2 * dt) end
-		Cam.CFrame = Cam.CFrame:Lerp(goal, math.clamp(a, 0.03, 1))
+		Cam.CFrame = Cam.CFrame:Lerp(goal, a)
 	end
 end
 
@@ -831,10 +878,11 @@ end)
 -- ==========================================
 -- LOOP PRINCIPAL
 -- ==========================================
-local origFOV, zoomOld, hookedCam, fovConn
+local origFOV, hookedCam, fovConn
+local zoomExtra, zoomFinal
 
-local function applyCam()
-	-- FOV da camera (reaplica mesmo que o jogo tente mudar)
+-- FOV da camera (reaplica mesmo que o jogo tente mudar)
+local function applyFOV()
 	if C.CamOn then
 		if not origFOV then origFOV = Cam.FieldOfView end
 		if Cam.FieldOfView ~= C.CamFOV then Cam.FieldOfView = C.CamFOV end
@@ -850,33 +898,36 @@ local function applyCam()
 			if C.CamOn and c.FieldOfView ~= C.CamFOV then c.FieldOfView = C.CamFOV end
 		end)
 	end
+end
 
-	-- camera distante (trava o zoom na distancia escolhida)
-	if C.CamDist then
-		if not zoomOld then zoomOld = {LP.CameraMinZoomDistance, LP.CameraMaxZoomDistance} end
-		local d = C.CamDistVal
-		if LP.CameraMaxZoomDistance ~= d or LP.CameraMinZoomDistance ~= d then
-			pcall(function()
-				LP.CameraMinZoomDistance = 0.5
-				LP.CameraMaxZoomDistance = d
-				LP.CameraMinZoomDistance = d
-			end)
+-- Camera distante: afasta (ou aproxima) a camera ate a distancia escolhida,
+-- funciona em qualquer jogo. O deslocamento e desfeito no inicio do proximo quadro.
+local function undoZoom()
+	if zoomExtra then
+		local c = WS.CurrentCamera
+		if c and zoomFinal and c.CFrame == zoomFinal then
+			c.CFrame = zoomFinal * CFrame.new(0, 0, -zoomExtra)
 		end
-	elseif zoomOld then
-		pcall(function()
-			LP.CameraMinZoomDistance = 0.5
-			LP.CameraMaxZoomDistance = zoomOld[2]
-			LP.CameraMinZoomDistance = zoomOld[1]
-		end)
-		zoomOld = nil
+		zoomExtra, zoomFinal = nil, nil
 	end
 end
 
--- mira + movimento (roda junto da camera)
+local function applyZoom()
+	if not C.CamDist then return end
+	local ch = LP.Character
+	local hd = ch and (ch:FindFirstChild("Head") or ch:FindFirstChild("HumanoidRootPart"))
+	if not hd then return end
+	local dist = (Cam.CFrame.Position - hd.Position).Magnitude
+	local lo = -math.max(dist - 0.5, 0)
+	local extra = math.clamp(C.CamDistVal - dist, lo, 500)
+	if math.abs(extra) < 0.05 then return end
+	Cam.CFrame = Cam.CFrame * CFrame.new(0, 0, extra)
+	zoomExtra = extra
+end
+
+-- movimento (roda junto da camera)
 local function stepMain(dt)
 	Cam = WS.CurrentCamera
-	if C.Aim then pcall(aim, dt) end
-
 	local h = hum()
 	if h then
 		if C.Walk and h.WalkSpeed ~= C.WalkVal then h.WalkSpeed = C.WalkVal end
@@ -886,15 +937,17 @@ local function stepMain(dt)
 		end
 		if C.Fly then pcall(fly, h) end
 	end
-
-	pcall(applyCam)
 end
 
--- ESP + circulo FOV (roda por ultimo, depois da camera parar de mexer)
--- o circulo FOV e independente do aimbot: aparece so se "Mostrar circulo FOV" estiver ligado
-local function stepDraw()
+-- por ultimo em cada quadro: FOV, zoom, mira, circulo FOV e ESP
+-- (a mira roda aqui para nenhum script do jogo desfazer o movimento da camera)
+local function stepDraw(dt)
 	Cam = WS.CurrentCamera
-	pcall(applyCam) -- por ultimo: vence qualquer script do jogo que mexa no FOV
+	pcall(applyFOV)
+	pcall(applyZoom)
+	if C.Aim then pcall(aim, dt) end
+	if zoomExtra then zoomFinal = Cam.CFrame end
+
 	if fov then
 		fov.Visible = C.ShowFOV
 		if C.ShowFOV then
@@ -917,11 +970,18 @@ end)
 local conn2
 if not boundDraw then conn2 = RS.RenderStepped:Connect(stepDraw) end
 
+-- antes da camera do jogo: desfaz o deslocamento do zoom
+local boundFirst = pcall(function()
+	RS:BindToRenderStep("NetrixHubFirst", Enum.RenderPriority.First.Value, undoZoom)
+end)
+
 Gui.Destroying:Connect(function()
 	if bound then pcall(function() RS:UnbindFromRenderStep("NetrixHubLoop") end) end
 	if conn then conn:Disconnect() end
 	if boundDraw then pcall(function() RS:UnbindFromRenderStep("NetrixHubDraw") end) end
 	if conn2 then conn2:Disconnect() end
+	if boundFirst then pcall(function() RS:UnbindFromRenderStep("NetrixHubFirst") end) end
+	pcall(undoZoom)
 	ncConn:Disconnect()
 	jConn:Disconnect()
 	idleConn:Disconnect()
@@ -929,13 +989,6 @@ Gui.Destroying:Connect(function()
 	setBright(false)
 	if fovConn then fovConn:Disconnect() end
 	if origFOV then Cam.FieldOfView = origFOV end
-	if zoomOld then
-		pcall(function()
-			LP.CameraMinZoomDistance = 0.5
-			LP.CameraMaxZoomDistance = zoomOld[2]
-			LP.CameraMinZoomDistance = zoomOld[1]
-		end)
-	end
 	local h = hum()
 	if h then
 		if C.Walk then h.WalkSpeed = 16 end
@@ -951,4 +1004,4 @@ end)
 if not ok then
 	warn("[Netrix Hub] erro: " .. tostring(err))
 	note("ERRO: " .. string.sub(tostring(err), 1, 150))
-end
+end	
