@@ -33,11 +33,11 @@ local mobile = UIS.TouchEnabled and not UIS.MouseEnabled
 local draw = false
 pcall(function() draw = Drawing ~= nil and Drawing.new ~= nil end)
 
-local C = {Aim = false, AimHold = false, Part = "Cabeca", TeamCheck = true, WallCheck = false, ShowFOV = true,
+local C = {Aim = false, AimHold = false, Part = "Cabeca", TeamCheck = false, WallCheck = false, ShowFOV = false,
 	FOV = 150, AimSpeed = 10, Line = false, Skel = false, Box = false, Name = false, Health = false,
 	Dist = false, ECol = "Roxo", ESPTeam = false, ESPY = 0, Walk = false, WalkVal = 32, Jump = false,
 	JumpVal = 100, InfJump = false, Noclip = false, Fly = false, FlyVal = 60, Bright = false,
-	CamOn = false, CamFOV = 70, AFK = true}
+	CamOn = false, CamFOV = 70, AFK = false}
 local CB = {}
 local ord = 0
 local function L() ord = ord + 1 return ord end
@@ -275,6 +275,7 @@ local A = tab("Aim", "🎯  Aim")
 local E = tab("ESP", "👁  ESP")
 local P = tab("Player", "🏃  Player")
 local M = tab("Misc", "⚙  Misc")
+local D = tab("Discord", "💬  Discord")
 
 sec(A, "Mira")
 toggle(A, "Ativar Aimbot", "Aim")
@@ -319,6 +320,17 @@ slider(M, "FOV da camera", 30, 120, "CamFOV")
 sec(M, "Outros")
 toggle(M, "Anti AFK", "AFK")
 btn(M, "Fechar hub", "FECHAR", Color3.fromRGB(210, 60, 90), function() Gui:Destroy() end)
+local DISCORD = "https://discord.gg/yQyvXYM2CK"
+sec(D, "Comunidade")
+local card = row(D, 74)
+T(card, "Entre no nosso Discord!", UDim2.new(0, 12, 0, 8), UDim2.new(1, -24, 0, 18), FB, 13, W)
+T(card, DISCORD, UDim2.new(0, 12, 0, 28), UDim2.new(1, -24, 0, 16), FM, 11, AC2)
+T(card, "Novidades, suporte e atualizacoes do Netrix Hub.", UDim2.new(0, 12, 0, 48), UDim2.new(1, -24, 0, 16), FM, 10, SUB)
+btn(D, "Link do Discord", "COPIAR", AC, function(b)
+	local okc = pcall(function() setclipboard(DISCORD) end)
+	note(okc and "Link do Discord copiado!" or ("Seu executor nao copia. Link: " .. DISCORD))
+end)
+
 show("Aim")
 
 -- abrir / fechar com animacao
@@ -740,18 +752,11 @@ end)
 -- LOOP PRINCIPAL
 -- ==========================================
 local origFOV
-local function step(dt)
+
+-- mira + movimento (roda junto da camera)
+local function stepMain(dt)
 	Cam = WS.CurrentCamera
-	if fov then
-		local s = C.ShowFOV and C.Aim
-		fov.Visible = s
-		if s then
-			fov.Radius = C.FOV
-			fov.Position = center()
-		end
-	end
 	if C.Aim then pcall(aim, dt) end
-	if draw then pcall(esp) end -- depois da mira, usando a camera ja atualizada
 
 	local h = hum()
 	if h then
@@ -772,15 +777,37 @@ local function step(dt)
 	end
 end
 
+-- ESP + circulo FOV (roda por ultimo, depois da camera parar de mexer)
+-- o circulo FOV e independente do aimbot: aparece so se "Mostrar circulo FOV" estiver ligado
+local function stepDraw()
+	Cam = WS.CurrentCamera
+	if fov then
+		fov.Visible = C.ShowFOV
+		if C.ShowFOV then
+			fov.Radius = C.FOV
+			fov.Position = center()
+		end
+	end
+	if draw then pcall(esp) end
+end
+
 local bound = pcall(function()
-	RS:BindToRenderStep("NetrixHubLoop", Enum.RenderPriority.Camera.Value + 1, step)
+	RS:BindToRenderStep("NetrixHubLoop", Enum.RenderPriority.Camera.Value + 1, stepMain)
 end)
 local conn
-if not bound then conn = RS.RenderStepped:Connect(step) end
+if not bound then conn = RS.RenderStepped:Connect(stepMain) end
+
+local boundDraw = pcall(function()
+	RS:BindToRenderStep("NetrixHubDraw", Enum.RenderPriority.Last.Value, stepDraw)
+end)
+local conn2
+if not boundDraw then conn2 = RS.RenderStepped:Connect(stepDraw) end
 
 Gui.Destroying:Connect(function()
 	if bound then pcall(function() RS:UnbindFromRenderStep("NetrixHubLoop") end) end
 	if conn then conn:Disconnect() end
+	if boundDraw then pcall(function() RS:UnbindFromRenderStep("NetrixHubDraw") end) end
+	if conn2 then conn2:Disconnect() end
 	ncConn:Disconnect()
 	jConn:Disconnect()
 	idleConn:Disconnect()
