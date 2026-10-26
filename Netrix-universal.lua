@@ -13,6 +13,7 @@ local UIS = game:GetService("UserInputService")
 local WS = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
 local TweenService = game:GetService("TweenService")
+local TextService = game:GetService("TextService")
 local LP = Players.LocalPlayer
 local Cam = WS.CurrentCamera
 local IMG = "rbxassetid://99262930883927"
@@ -20,10 +21,10 @@ local IMG = "rbxassetid://99262930883927"
 -- cores e fontes do painel
 local AC = Color3.fromRGB(150, 90, 255)
 local AC2 = Color3.fromRGB(205, 130, 255)
-local BG = Color3.fromRGB(15, 14, 22)
-local PANEL = Color3.fromRGB(27, 26, 38)
-local PANEL2 = Color3.fromRGB(38, 36, 54)
-local LINE = Color3.fromRGB(46, 44, 64)
+local BG = Color3.fromRGB(11, 11, 16)
+local PANEL = Color3.fromRGB(20, 19, 30)
+local PANEL2 = Color3.fromRGB(34, 31, 50)
+local LINE = Color3.fromRGB(54, 49, 78)
 local OFF = Color3.fromRGB(58, 56, 76)
 local SUB = Color3.fromRGB(150, 148, 178)
 local W = Color3.new(1, 1, 1)
@@ -35,9 +36,9 @@ pcall(function() draw = Drawing ~= nil and Drawing.new ~= nil end)
 
 local C = {Aim = false, AimHold = false, Part = "Cabeca", TeamCheck = false, WallCheck = false, ShowFOV = false,
 	FOV = 150, AimSpeed = 10, Line = false, Skel = false, Box = false, Name = false, Health = false,
-	Dist = false, ECol = "Roxo", ESPTeam = false, ESPY = 0, Walk = false, WalkVal = 32, Jump = false,
+	Dist = false, ECol = "Roxo", ESPTeam = false, Walk = false, WalkVal = 32, Jump = false,
 	JumpVal = 100, InfJump = false, Noclip = false, Fly = false, FlyVal = 60, Bright = false,
-	CamOn = false, CamFOV = 70, AFK = false}
+	CamOn = false, CamFOV = 70, CamDist = false, CamDistVal = 30, AFK = false}
 local CB = {}
 local ord = 0
 local function L() ord = ord + 1 return ord end
@@ -112,77 +113,88 @@ end
 -- PAINEL PRINCIPAL
 -- ==========================================
 local vp0 = Cam.ViewportSize
-local MW, MH = math.min(490, vp0.X - 24), math.min(330, vp0.Y - 40)
+local MW, MH = math.min(500, vp0.X - 24), math.min(340, vp0.Y - 40)
 
 local Main = R(N("Frame", {Size = UDim2.new(0, MW, 0, MH), Position = UDim2.new(0.5, -MW / 2, 0.5, -MH / 2),
-	BackgroundColor3 = W, BorderSizePixel = 0}, Gui), 16)
-N("UIGradient", {Color = ColorSequence.new(Color3.fromRGB(26, 20, 42), Color3.fromRGB(12, 12, 18)), Rotation = 135}, Main)
-stroke(Main, AC, 1.2, 0.5)
+	BackgroundColor3 = BG, BorderSizePixel = 0}, Gui), 10)
+stroke(Main, Color3.fromRGB(78, 58, 125), 1, 0.15)
 local Scale = N("UIScale", {Scale = 1}, Main)
 
+-- imagem do botao flutuante como fundo do painel
+R(N("ImageLabel", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Image = IMG,
+	ImageTransparency = 0.78, ScaleType = Enum.ScaleType.Crop, ZIndex = 0}, Main), 10)
+
 -- cabecalho
-local Bar = N("Frame", {Size = UDim2.new(1, 0, 0, 48), BackgroundTransparency = 1, Active = true}, Main)
-local Logo = R(N("ImageLabel", {Size = UDim2.new(0, 32, 0, 32), Position = UDim2.new(0, 12, 0, 8),
-	BackgroundColor3 = PANEL, BorderSizePixel = 0, Image = IMG, ScaleType = Enum.ScaleType.Crop}, Bar), 10)
-T(Bar, "NETRIX HUB", UDim2.new(0, 52, 0, 7), UDim2.new(1, -110, 0, 18), FB, 15, W)
-T(Bar, "Universal v8  •  YouTube: @Netrix ofc", UDim2.new(0, 52, 0, 25), UDim2.new(1, -110, 0, 14), FM, 10, SUB)
-local X = R(N("TextButton", {Text = "—", Font = FB, TextSize = 14, TextColor3 = W, BackgroundColor3 = PANEL2,
-	AutoButtonColor = false, BorderSizePixel = 0, Size = UDim2.new(0, 28, 0, 28),
-	Position = UDim2.new(1, -40, 0, 10)}, Bar), 9)
-X.MouseEnter:Connect(function() tw(X, 0.12, {BackgroundColor3 = Color3.fromRGB(210, 60, 90)}) end)
-X.MouseLeave:Connect(function() tw(X, 0.12, {BackgroundColor3 = PANEL2}) end)
-N("Frame", {Size = UDim2.new(1, -24, 0, 1), Position = UDim2.new(0, 12, 0, 48), BackgroundColor3 = LINE,
+local Bar = N("Frame", {Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, Active = true}, Main)
+local tl = T(Bar, "", UDim2.new(0, 14, 0, 0), UDim2.new(0, 110, 1, 0), FB, 16, W)
+tl.RichText = true
+tl.Text = 'NETRIX <font color="rgb(170,115,255)">HUB</font>'
+T(Bar, "UNIVERSAL  •  v8", UDim2.new(0, 118, 0, 2), UDim2.new(0, 140, 1, 0), FM, 10, SUB)
+local X = N("TextButton", {Text = "✕", Font = FB, TextSize = 13, TextColor3 = SUB, BackgroundTransparency = 1,
+	AutoButtonColor = false, Size = UDim2.new(0, 40, 0, 40), Position = UDim2.new(1, -40, 0, 0)}, Bar)
+X.MouseEnter:Connect(function() tw(X, 0.12, {TextColor3 = Color3.fromRGB(255, 90, 110)}) end)
+X.MouseLeave:Connect(function() tw(X, 0.12, {TextColor3 = SUB}) end)
+local hl = N("Frame", {Size = UDim2.new(1, -20, 0, 1), Position = UDim2.new(0, 10, 0, 40), BackgroundColor3 = W,
 	BorderSizePixel = 0}, Main)
+N("UIGradient", {Color = ColorSequence.new(AC, Color3.fromRGB(35, 30, 55))}, hl)
 drag(Bar, Main)
 
 -- menu lateral
-local Side = R(N("Frame", {Size = UDim2.new(0, 108, 1, -64), Position = UDim2.new(0, 10, 0, 54),
-	BackgroundColor3 = PANEL, BorderSizePixel = 0}, Main), 12)
-N("UIListLayout", {Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder}, Side)
-N("UIPadding", {PaddingTop = UDim.new(0, 8), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8)}, Side)
+local Side = R(N("Frame", {Size = UDim2.new(0, 104, 1, -56), Position = UDim2.new(0, 8, 0, 48),
+	BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.5, BorderSizePixel = 0}, Main), 8)
+N("UIListLayout", {Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder}, Side)
+N("UIPadding", {PaddingTop = UDim.new(0, 8), PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6)}, Side)
 
-local Body = N("Frame", {Size = UDim2.new(1, -134, 1, -64), Position = UDim2.new(0, 126, 0, 54),
+local Body = N("Frame", {Size = UDim2.new(1, -126, 1, -56), Position = UDim2.new(0, 118, 0, 48),
 	BackgroundTransparency = 1, ClipsDescendants = true}, Main)
 
 local pages, tabs = {}, {}
 local function show(n)
 	for k, p in pairs(pages) do p.Visible = (k == n) end
-	for k, b in pairs(tabs) do
+	for k, t in pairs(tabs) do
 		local on = (k == n)
-		tw(b, 0.15, {BackgroundTransparency = on and 0 or 1, TextColor3 = on and W or SUB})
+		t.ind.Visible = on
+		tw(t.b, 0.15, {BackgroundTransparency = on and 0.82 or 1, TextColor3 = on and W or SUB})
 	end
 end
 local function tab(name, label)
-	local b = R(N("TextButton", {Size = UDim2.new(1, 0, 0, 32), BackgroundColor3 = AC, BackgroundTransparency = 1,
-		Text = label, Font = FM, TextSize = 12, TextColor3 = SUB, AutoButtonColor = false, BorderSizePixel = 0,
-		LayoutOrder = L()}, Side), 9)
-	tabs[name] = b
+	local b = R(N("TextButton", {Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = AC, BackgroundTransparency = 1,
+		Text = label, Font = FM, TextSize = 11, TextColor3 = SUB, TextXAlignment = Enum.TextXAlignment.Left,
+		AutoButtonColor = false, BorderSizePixel = 0, LayoutOrder = L()}, Side), 6)
+	N("UIPadding", {PaddingLeft = UDim.new(0, 14)}, b)
+	local ind = R(N("Frame", {Size = UDim2.new(0, 3, 0, 14), Position = UDim2.new(0, -11, 0.5, -7),
+		BackgroundColor3 = AC2, BorderSizePixel = 0, Visible = false}, b), 2)
+	tabs[name] = {b = b, ind = ind}
 	local pg = N("ScrollingFrame", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, BorderSizePixel = 0,
 		ScrollBarThickness = 3, ScrollBarImageColor3 = AC, CanvasSize = UDim2.new(),
-		AutomaticCanvasSize = Enum.AutomaticSize.Y, Visible = false}, Body)
-	N("UIListLayout", {Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder}, pg)
+		Visible = false}, Body)
+	pg.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	N("UIListLayout", {Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder}, pg)
 	N("UIPadding", {PaddingRight = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6)}, pg)
 	pages[name] = pg
 	b.MouseButton1Click:Connect(function() show(name) end)
 	b.MouseEnter:Connect(function()
-		if pages[name] and not pages[name].Visible then tw(b, 0.12, {BackgroundTransparency = 0.85}) end
+		if not pg.Visible then tw(b, 0.12, {BackgroundTransparency = 0.92}) end
 	end)
 	b.MouseLeave:Connect(function()
-		if pages[name] and not pages[name].Visible then tw(b, 0.12, {BackgroundTransparency = 1}) end
+		if not pg.Visible then tw(b, 0.12, {BackgroundTransparency = 1}) end
 	end)
 	return pg
 end
 
 local function sec(pg, txt)
-	local l = T(pg, string.upper(txt), UDim2.new(), UDim2.new(1, 0, 0, 16), FB, 10, SUB)
-	l.LayoutOrder = L()
-	N("UIPadding", {PaddingLeft = UDim.new(0, 4)}, l)
-	return l
+	local f = N("Frame", {Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, LayoutOrder = L()}, pg)
+	local label = string.upper(txt)
+	local w = TextService:GetTextSize(label, 10, FB, Vector2.new(400, 20)).X
+	T(f, label, UDim2.new(0, 2, 0, 0), UDim2.new(0, w + 4, 1, 0), FB, 10, AC2)
+	N("Frame", {Size = UDim2.new(1, -(w + 14), 0, 1), Position = UDim2.new(0, w + 10, 0.5, 0),
+		BackgroundColor3 = LINE, BorderSizePixel = 0}, f)
+	return f
 end
 local function row(pg, h, cls)
-	local r = R(N(cls or "Frame", {Size = UDim2.new(1, 0, 0, h), BackgroundColor3 = PANEL, BorderSizePixel = 0,
-		LayoutOrder = L()}, pg), 10)
-	stroke(r, LINE, 1, 0.3)
+	local r = R(N(cls or "Frame", {Size = UDim2.new(1, 0, 0, h), BackgroundColor3 = PANEL,
+		BackgroundTransparency = 0.2, BorderSizePixel = 0, LayoutOrder = L()}, pg), 6)
+	stroke(r, LINE, 1, 0.4)
 	return r
 end
 local function hover(r)
@@ -191,18 +203,18 @@ local function hover(r)
 end
 
 local function toggle(pg, txt, key)
-	local r = row(pg, 36, "TextButton")
+	local r = row(pg, 32, "TextButton")
 	r.Text = ""
 	r.AutoButtonColor = false
 	hover(r)
-	T(r, txt, UDim2.new(0, 12, 0, 0), UDim2.new(1, -70, 1, 0), FM, 12, W)
-	local t = R(N("Frame", {Size = UDim2.new(0, 38, 0, 20), Position = UDim2.new(1, -50, 0.5, -10),
-		BorderSizePixel = 0}, r), 10)
-	local k = R(N("Frame", {Size = UDim2.new(0, 16, 0, 16), BackgroundColor3 = W, BorderSizePixel = 0}, t), 8)
+	T(r, txt, UDim2.new(0, 12, 0, 0), UDim2.new(1, -62, 1, 0), FM, 12, W)
+	local t = R(N("Frame", {Size = UDim2.new(0, 32, 0, 16), Position = UDim2.new(1, -44, 0.5, -8),
+		BorderSizePixel = 0}, r), 8)
+	local k = R(N("Frame", {Size = UDim2.new(0, 12, 0, 12), BackgroundColor3 = W, BorderSizePixel = 0}, t), 6)
 	local function paint(anim)
 		local on = C[key]
 		local tc = on and AC or OFF
-		local kp = on and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+		local kp = on and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
 		if anim then
 			tw(t, 0.15, {BackgroundColor3 = tc})
 			tw(k, 0.15, {Position = kp})
@@ -220,26 +232,25 @@ local function toggle(pg, txt, key)
 end
 
 local function slider(pg, txt, mn, mx, key)
-	local r = row(pg, 50)
-	T(r, txt, UDim2.new(0, 12, 0, 5), UDim2.new(1, -80, 0, 18), FM, 12, W)
-	local v = T(r, tostring(C[key]), UDim2.new(1, -66, 0, 5), UDim2.new(0, 54, 0, 18), FB, 12, AC2,
+	local r = row(pg, 44)
+	T(r, txt, UDim2.new(0, 12, 0, 4), UDim2.new(1, -80, 0, 16), FM, 12, W)
+	local v = T(r, tostring(C[key]), UDim2.new(1, -66, 0, 4), UDim2.new(0, 54, 0, 16), FB, 12, AC2,
 		Enum.TextXAlignment.Right)
-	local bar = R(N("Frame", {Size = UDim2.new(1, -30, 0, 6), Position = UDim2.new(0, 15, 0, 34),
-		BackgroundColor3 = OFF, BorderSizePixel = 0}, r), 3)
+	local bar = R(N("Frame", {Size = UDim2.new(1, -30, 0, 4), Position = UDim2.new(0, 15, 0, 30),
+		BackgroundColor3 = OFF, BorderSizePixel = 0}, r), 2)
 	local p0 = (C[key] - mn) / (mx - mn)
-	local fill = R(N("Frame", {Size = UDim2.new(p0, 0, 1, 0), BackgroundColor3 = W, BorderSizePixel = 0}, bar), 3)
-	N("UIGradient", {Color = ColorSequence.new(AC, AC2)}, fill)
-	local knob = R(N("Frame", {Size = UDim2.new(0, 16, 0, 16), AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(p0, 0, 0.5, 0), BackgroundColor3 = W, BorderSizePixel = 0}, bar), 8)
-	local hit = N("TextButton", {BackgroundTransparency = 1, Text = "", Position = UDim2.new(0, 6, 0, 22),
+	local fill = R(N("Frame", {Size = UDim2.new(p0, 0, 1, 0), BackgroundColor3 = AC, BorderSizePixel = 0}, bar), 2)
+	local knob = R(N("Frame", {Size = UDim2.new(0, 12, 0, 12), AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(p0, 0, 0.5, 0), BackgroundColor3 = W, BorderSizePixel = 0}, bar), 6)
+	local hit = N("TextButton", {BackgroundTransparency = 1, Text = "", Position = UDim2.new(0, 6, 0, 18),
 		Size = UDim2.new(1, -12, 0, 26)}, r)
 	local function set(x)
 		local rel = math.clamp((x - bar.AbsolutePosition.X) / math.max(bar.AbsoluteSize.X, 1), 0, 1)
 		local val = math.floor(mn + (mx - mn) * rel + 0.5)
-		local s = (val - mn) / (mx - mn)
+		local s2 = (val - mn) / (mx - mn)
 		C[key] = val
-		fill.Size = UDim2.new(s, 0, 1, 0)
-		knob.Position = UDim2.new(s, 0, 0.5, 0)
+		fill.Size = UDim2.new(s2, 0, 1, 0)
+		knob.Position = UDim2.new(s2, 0, 0.5, 0)
 		v.Text = tostring(val)
 	end
 	hit.InputBegan:Connect(function(i)
@@ -252,11 +263,11 @@ local function slider(pg, txt, mn, mx, key)
 end
 
 local function btn(pg, txt, label, color, cb)
-	local r = row(pg, 36)
-	T(r, txt, UDim2.new(0, 12, 0, 0), UDim2.new(1, -120, 1, 0), FM, 12, W)
-	local b = R(N("TextButton", {Size = UDim2.new(0, 90, 0, 24), Position = UDim2.new(1, -100, 0.5, -12),
-		BackgroundColor3 = color, Text = label, Font = FB, TextSize = 11, TextColor3 = W, AutoButtonColor = false,
-		BorderSizePixel = 0}, r), 8)
+	local r = row(pg, 32)
+	T(r, txt, UDim2.new(0, 12, 0, 0), UDim2.new(1, -110, 1, 0), FM, 12, W)
+	local b = R(N("TextButton", {Size = UDim2.new(0, 84, 0, 20), Position = UDim2.new(1, -94, 0.5, -10),
+		BackgroundColor3 = color, Text = label, Font = FB, TextSize = 10, TextColor3 = W, AutoButtonColor = false,
+		BorderSizePixel = 0}, r), 5)
 	b.MouseEnter:Connect(function() tw(b, 0.12, {BackgroundColor3 = color:Lerp(W, 0.18)}) end)
 	b.MouseLeave:Connect(function() tw(b, 0.12, {BackgroundColor3 = color}) end)
 	b.MouseButton1Click:Connect(function() cb(b) end)
@@ -271,11 +282,11 @@ local function pick(pg, txt, opts, key)
 	end)
 end
 
-local A = tab("Aim", "🎯  Aim")
-local E = tab("ESP", "👁  ESP")
-local P = tab("Player", "🏃  Player")
-local M = tab("Misc", "⚙  Misc")
-local D = tab("Discord", "💬  Discord")
+local A = tab("Aim", "AIM")
+local E = tab("ESP", "ESP")
+local P = tab("Player", "PLAYER")
+local M = tab("Misc", "MISC")
+local D = tab("Discord", "DISCORD")
 
 sec(A, "Mira")
 toggle(A, "Ativar Aimbot", "Aim")
@@ -300,7 +311,6 @@ toggle(E, "ESP Distancia", "Dist")
 sec(E, "Ajustes")
 pick(E, "Cor do ESP", {"Roxo", "Vermelho", "Verde", "Azul", "Branco"}, "ECol")
 toggle(E, "Ignorar meu time", "ESPTeam")
-slider(E, "Ajuste vertical do ESP", -60, 60, "ESPY")
 
 sec(P, "Movimento")
 toggle(P, "Speed", "Walk")
@@ -313,23 +323,94 @@ sec(P, "Voo")
 toggle(P, "Fly", "Fly")
 slider(P, "Velocidade do Fly", 20, 200, "FlyVal")
 
-sec(M, "Visual")
-toggle(M, "Fullbright", "Bright")
+sec(M, "Camera")
+toggle(M, "Camera distante", "CamDist")
+slider(M, "Distancia da camera", 10, 300, "CamDistVal")
 toggle(M, "Alterar FOV da camera", "CamOn")
 slider(M, "FOV da camera", 30, 120, "CamFOV")
+sec(M, "Visual")
+toggle(M, "Fullbright", "Bright")
 sec(M, "Outros")
 toggle(M, "Anti AFK", "AFK")
 btn(M, "Fechar hub", "FECHAR", Color3.fromRGB(210, 60, 90), function() Gui:Destroy() end)
+
+-- ---------- aba Discord ----------
 local DISCORD = "https://discord.gg/yQyvXYM2CK"
-sec(D, "Comunidade")
-local card = row(D, 74)
-T(card, "Entre no nosso Discord!", UDim2.new(0, 12, 0, 8), UDim2.new(1, -24, 0, 18), FB, 13, W)
-T(card, DISCORD, UDim2.new(0, 12, 0, 28), UDim2.new(1, -24, 0, 16), FM, 11, AC2)
-T(card, "Novidades, suporte e atualizacoes do Netrix Hub.", UDim2.new(0, 12, 0, 48), UDim2.new(1, -24, 0, 16), FM, 10, SUB)
-btn(D, "Link do Discord", "COPIAR", AC, function(b)
-	local okc = pcall(function() setclipboard(DISCORD) end)
-	note(okc and "Link do Discord copiado!" or ("Seu executor nao copia. Link: " .. DISCORD))
+local DCODE = "yQyvXYM2CK"
+local BLURPLE = Color3.fromRGB(88, 101, 242)
+
+local function copyLink()
+	return (pcall(function() setclipboard(DISCORD) end))
+end
+local function joinDiscord()
+	local copied = copyLink()
+	local req = (syn and syn.request) or (http and http.request) or http_request or request
+	local sent = false
+	if req then
+		sent = pcall(function()
+			local HS = game:GetService("HttpService")
+			req({Url = "http://127.0.0.1:6463/rpc?v=1", Method = "POST",
+				Headers = {["Content-Type"] = "application/json", ["Origin"] = "https://discord.com"},
+				Body = HS:JSONEncode({cmd = "INVITE_BROWSER", args = {code = DCODE}, nonce = HS:GenerateGUID(false)})})
+		end)
+	end
+	if sent then
+		note("Convite enviado ao Discord! Link tambem copiado.")
+	elseif copied then
+		note("Link copiado! Cole no navegador ou no Discord.")
+	else
+		note("Link: " .. DISCORD)
+	end
+end
+
+-- banner
+local banner = R(N("Frame", {Size = UDim2.new(1, 0, 0, 112), BackgroundColor3 = Color3.fromRGB(20, 16, 34),
+	BorderSizePixel = 0, LayoutOrder = L(), ClipsDescendants = true}, D), 8)
+R(N("ImageLabel", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Image = IMG, ImageTransparency = 0.3,
+	ScaleType = Enum.ScaleType.Crop}, banner), 8)
+local shade = R(N("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = W, BorderSizePixel = 0}, banner), 8)
+N("UIGradient", {Color = ColorSequence.new(Color3.fromRGB(8, 6, 16)), Rotation = 90,
+	Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.92), NumberSequenceKeypoint.new(1, 0.05)})}, shade)
+local badge = R(N("Frame", {Size = UDim2.new(0, 64, 0, 18), Position = UDim2.new(0, 12, 0, 10),
+	BackgroundColor3 = BLURPLE, BorderSizePixel = 0}, banner), 5)
+T(badge, "DISCORD", UDim2.new(), UDim2.new(1, 0, 1, 0), FB, 9, W, Enum.TextXAlignment.Center)
+T(banner, "NETRIX HUB", UDim2.new(0, 14, 1, -52), UDim2.new(1, -28, 0, 28), FB, 24, W)
+T(banner, "COMUNIDADE OFICIAL", UDim2.new(0, 14, 1, -26), UDim2.new(1, -28, 0, 16), FM, 10, AC2)
+
+-- vantagens
+local perks = {"Scripts novos", "Suporte", "Atualizacoes"}
+local pr = N("Frame", {Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, LayoutOrder = L()}, D)
+for i, t in ipairs(perks) do
+	local c = R(N("TextLabel", {Size = UDim2.new(1 / 3, -4, 1, 0), Position = UDim2.new((i - 1) / 3, (i - 1) * 2, 0, 0),
+		BackgroundColor3 = PANEL, BackgroundTransparency = 0.2, Text = t, Font = FM, TextSize = 11, TextColor3 = W,
+		BorderSizePixel = 0}, pr), 6)
+	stroke(c, LINE, 1, 0.4)
+end
+
+-- link com botao de copiar
+local lr = row(D, 36)
+T(lr, DISCORD, UDim2.new(0, 12, 0, 0), UDim2.new(1, -100, 1, 0), FM, 12, AC2)
+local cb = R(N("TextButton", {Size = UDim2.new(0, 70, 0, 22), Position = UDim2.new(1, -80, 0.5, -11),
+	BackgroundColor3 = PANEL2, Text = "COPIAR", Font = FB, TextSize = 10, TextColor3 = W, AutoButtonColor = false,
+	BorderSizePixel = 0}, lr), 5)
+cb.MouseEnter:Connect(function() tw(cb, 0.12, {BackgroundColor3 = AC}) end)
+cb.MouseLeave:Connect(function() tw(cb, 0.12, {BackgroundColor3 = PANEL2}) end)
+cb.MouseButton1Click:Connect(function()
+	note(copyLink() and "Link do Discord copiado!" or ("Link: " .. DISCORD))
 end)
+
+-- botao principal
+local jb = R(N("TextButton", {Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = BLURPLE, Text = "ENTRAR NO DISCORD",
+	Font = FB, TextSize = 13, TextColor3 = W, AutoButtonColor = false, BorderSizePixel = 0, LayoutOrder = L()}, D), 8)
+jb.MouseEnter:Connect(function() tw(jb, 0.12, {BackgroundColor3 = BLURPLE:Lerp(W, 0.15)}) end)
+jb.MouseLeave:Connect(function() tw(jb, 0.12, {BackgroundColor3 = BLURPLE}) end)
+jb.MouseButton1Click:Connect(joinDiscord)
+
+local hint = T(D, "Se nao abrir sozinho, o link e copiado: cole no navegador ou no app do Discord.",
+	UDim2.new(), UDim2.new(1, 0, 0, 28), FM, 10, SUB)
+hint.TextWrapped = true
+hint.LayoutOrder = L()
+hint.TextYAlignment = Enum.TextYAlignment.Top
 
 show("Aim")
 
@@ -339,10 +420,10 @@ local function setOpen(v)
 	open = v
 	if v then
 		Main.Visible = true
-		Scale.Scale = 0.88
+		Scale.Scale = 0.9
 		tw(Scale, 0.22, {Scale = 1}, Enum.EasingStyle.Back)
 	else
-		tw(Scale, 0.14, {Scale = 0.88})
+		tw(Scale, 0.14, {Scale = 0.9})
 		task.delay(0.14, function() if not open then Main.Visible = false end end)
 	end
 end
@@ -557,7 +638,6 @@ local function esp()
 	end
 
 	local vp = Cam.ViewportSize
-	local oy = C.ESPY
 	local mine = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
 
 	for p, o in pairs(ESP) do
@@ -575,7 +655,7 @@ local function esp()
 			else
 				local top = Cam:WorldToViewportPoint(base + Vector3.new(0, 2.7, 0))
 				local bot = Cam:WorldToViewportPoint(base - Vector3.new(0, 3.1, 0))
-				local topY, botY = top.Y + oy, bot.Y + oy
+				local topY, botY = top.Y, bot.Y
 				local hh = math.abs(botY - topY)
 				local ww = hh * 0.55
 				local cx = rp.X
@@ -628,8 +708,8 @@ local function esp()
 							local pa, va = Cam:WorldToViewportPoint(a.Position)
 							local pc, vc = Cam:WorldToViewportPoint(c.Position)
 							if va and vc then
-								b.From = Vector2.new(pa.X, pa.Y + oy)
-								b.To = Vector2.new(pc.X, pc.Y + oy)
+								b.From = Vector2.new(pa.X, pa.Y)
+								b.To = Vector2.new(pc.X, pc.Y)
 								b.Visible = true
 							end
 						end
@@ -751,7 +831,46 @@ end)
 -- ==========================================
 -- LOOP PRINCIPAL
 -- ==========================================
-local origFOV
+local origFOV, zoomOld, hookedCam, fovConn
+
+local function applyCam()
+	-- FOV da camera (reaplica mesmo que o jogo tente mudar)
+	if C.CamOn then
+		if not origFOV then origFOV = Cam.FieldOfView end
+		if Cam.FieldOfView ~= C.CamFOV then Cam.FieldOfView = C.CamFOV end
+	elseif origFOV then
+		Cam.FieldOfView = origFOV
+		origFOV = nil
+	end
+	if Cam ~= hookedCam then
+		hookedCam = Cam
+		if fovConn then fovConn:Disconnect() end
+		local c = Cam
+		fovConn = c:GetPropertyChangedSignal("FieldOfView"):Connect(function()
+			if C.CamOn and c.FieldOfView ~= C.CamFOV then c.FieldOfView = C.CamFOV end
+		end)
+	end
+
+	-- camera distante (trava o zoom na distancia escolhida)
+	if C.CamDist then
+		if not zoomOld then zoomOld = {LP.CameraMinZoomDistance, LP.CameraMaxZoomDistance} end
+		local d = C.CamDistVal
+		if LP.CameraMaxZoomDistance ~= d or LP.CameraMinZoomDistance ~= d then
+			pcall(function()
+				LP.CameraMinZoomDistance = 0.5
+				LP.CameraMaxZoomDistance = d
+				LP.CameraMinZoomDistance = d
+			end)
+		end
+	elseif zoomOld then
+		pcall(function()
+			LP.CameraMinZoomDistance = 0.5
+			LP.CameraMaxZoomDistance = zoomOld[2]
+			LP.CameraMinZoomDistance = zoomOld[1]
+		end)
+		zoomOld = nil
+	end
+end
 
 -- mira + movimento (roda junto da camera)
 local function stepMain(dt)
@@ -768,19 +887,14 @@ local function stepMain(dt)
 		if C.Fly then pcall(fly, h) end
 	end
 
-	if C.CamOn then
-		if not origFOV then origFOV = Cam.FieldOfView end
-		Cam.FieldOfView = C.CamFOV
-	elseif origFOV then
-		Cam.FieldOfView = origFOV
-		origFOV = nil
-	end
+	pcall(applyCam)
 end
 
 -- ESP + circulo FOV (roda por ultimo, depois da camera parar de mexer)
 -- o circulo FOV e independente do aimbot: aparece so se "Mostrar circulo FOV" estiver ligado
 local function stepDraw()
 	Cam = WS.CurrentCamera
+	pcall(applyCam) -- por ultimo: vence qualquer script do jogo que mexa no FOV
 	if fov then
 		fov.Visible = C.ShowFOV
 		if C.ShowFOV then
@@ -813,7 +927,15 @@ Gui.Destroying:Connect(function()
 	idleConn:Disconnect()
 	stopFly()
 	setBright(false)
+	if fovConn then fovConn:Disconnect() end
 	if origFOV then Cam.FieldOfView = origFOV end
+	if zoomOld then
+		pcall(function()
+			LP.CameraMinZoomDistance = 0.5
+			LP.CameraMaxZoomDistance = zoomOld[2]
+			LP.CameraMinZoomDistance = zoomOld[1]
+		end)
+	end
 	local h = hum()
 	if h then
 		if C.Walk then h.WalkSpeed = 16 end
