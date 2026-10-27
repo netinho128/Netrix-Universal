@@ -36,7 +36,7 @@ local draw = false
 pcall(function() draw = Drawing ~= nil and Drawing.new ~= nil end)
 
 local C = {Aim = false, AimHold = false, Part = "Cabeca", TeamCheck = false, WallCheck = false, ShowFOV = false,
-	FOV = 150, AimSpeed = 15, Line = false, Skel = false, Box = false, Name = false, Health = false,
+	FOV = 150, AimSpeed = 6, Line = false, Skel = false, Box = false, Name = false, Health = false,
 	Dist = false, ECol = "Roxo", ESPTeam = false, Walk = false, WalkVal = 32, Jump = false,
 	JumpVal = 100, InfJump = false, Noclip = false, Fly = false, FlyVal = 60, Bright = false,
 	CamOn = false, CamFOV = 70, CamDist = false, CamDistVal = 30, AFK = false}
@@ -127,10 +127,10 @@ R(N("ImageLabel", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Ima
 
 -- cabecalho
 local Bar = N("Frame", {Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, Active = true}, Main)
-local tl = T(Bar, "", UDim2.new(0, 14, 0, 0), UDim2.new(0, 110, 1, 0), FB, 16, W)
+local tl = T(Bar, "", UDim2.new(0, 14, 0, 4), UDim2.new(1, -64, 0, 20), FB, 16, W)
 tl.RichText = true
-tl.Text = 'NETRIX <font color="rgb(170,115,255)">HUB</font>'
-T(Bar, "YouTube: Netrix Oficial", UDim2.new(0, 118, 0, 2), UDim2.new(0, 220, 1, 0), FM, 10, SUB)
+tl.Text = 'NETRIX HUB <font color="rgb(170,115,255)">UNIVERSAL</font>'
+T(Bar, "YouTube: Netrix Oficial", UDim2.new(0, 14, 0, 23), UDim2.new(1, -64, 0, 14), FM, 10, SUB)
 local X = R(N("TextButton", {Text = "", BackgroundColor3 = PANEL2, BackgroundTransparency = 0.1,
 	AutoButtonColor = false, Size = UDim2.new(0, 28, 0, 28), Position = UDim2.new(1, -38, 0, 6),
 	BorderSizePixel = 0}, Bar), 8)
@@ -300,11 +300,6 @@ local E = tab("ESP", "ESP")
 local P = tab("Player", "PLAYER")
 local M = tab("Misc", "MISC")
 local D = tab("Discord", "DISCORD")
-do
-	local dtb = tabs["Discord"].b
-	dtb.UIPadding.PaddingLeft = UDim.new(0, 32)
-	discordIcon(dtb, 16, UDim2.new(0, -20, 0.5, -8))
-end
 
 sec(A, "Mira")
 toggle(A, "Ativar Aimbot", "Aim")
@@ -319,7 +314,7 @@ toggle(A, "Mostrar circulo FOV", "ShowFOV")
 slider(A, "Tamanho do FOV", 20, 500, "FOV")
 
 sec(E, "Desenhos")
-toggle(E, "ESP Line (vem de cima)", "Line")
+toggle(E, "ESP Line", "Line")
 toggle(E, "ESP Esqueleto", "Skel")
 toggle(E, "ESP Caixa", "Box")
 sec(E, "Informacoes")
@@ -574,7 +569,14 @@ local function aim(dt)
 	aimOwner = lockP
 
 	local a = 1
-	if soft then a = 1 - math.exp(-0.8 * C.AimSpeed * C.AimSpeed * dt) end
+	if soft then
+		a = 1 - math.exp(-0.8 * C.AimSpeed * C.AimSpeed * dt)
+		-- puxadinha de leve: fraca na borda do FOV, um pouco mais forte perto do alvo
+		local sp = Cam:WorldToViewportPoint(aimPoint)
+		local dpx = (Vector2.new(sp.X, sp.Y) - center()).Magnitude
+		local near = math.clamp(1 - dpx / math.max(C.FOV, 1), 0, 1)
+		a = a * (0.2 + 0.8 * near * near)
+	end
 	a = math.clamp(a, 0, 1)
 
 	if not mobile and mousemoverel and UIS.MouseBehavior == Enum.MouseBehavior.LockCenter then
@@ -695,6 +697,39 @@ local function getp(o, ch, n)
 	return p
 end
 
+local function halfY(p)
+	local cf, sz = p.CFrame, p.Size
+	return (math.abs(cf.RightVector.Y) * sz.X + math.abs(cf.UpVector.Y) * sz.Y + math.abs(cf.LookVector.Y) * sz.Z) / 2
+end
+local FEET15 = {"LeftFoot", "RightFoot", "LeftLowerLeg", "RightLowerLeg"}
+local FEET6 = {"Left Leg", "Right Leg"}
+local lastE
+
+-- altura real do corpo (topo da cabeca ate o pe mais baixo), suavizada para nao tremer
+local function bodyExtents(o, ch, rt, edt)
+	local hd = getp(o, ch, "Head")
+	local topAbs = hd and (hd.Position.Y + halfY(hd)) or (rt.Position.Y + 2.7)
+	local low
+	local names = getp(o, ch, "UpperTorso") and FEET15 or FEET6
+	for _, n in ipairs(names) do
+		local part = getp(o, ch, n)
+		if part then
+			local y = part.Position.Y - halfY(part)
+			if not low or y < low then low = y end
+		end
+	end
+	low = low or (rt.Position.Y - 3)
+	local ty, by = topAbs - rt.Position.Y, low - rt.Position.Y
+	if o.ty then
+		local k = 1 - math.exp(-18 * edt)
+		o.ty = o.ty + (ty - o.ty) * k
+		o.by = o.by + (by - o.by) * k
+	else
+		o.ty, o.by = ty, by
+	end
+	return o.ty, o.by
+end
+
 local function esp()
 	if not (C.Line or C.Skel or C.Box or C.Name or C.Health or C.Dist) then
 		if shown then
@@ -717,6 +752,10 @@ local function esp()
 		if p ~= LP and not ESP[p] then mk(p) end
 	end
 
+	local now = os.clock()
+	local edt = math.min(now - (lastE or now), 0.1)
+	lastE = now
+
 	local vp = Cam.ViewportSize
 	local mine = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
 
@@ -727,17 +766,18 @@ local function esp()
 		if not (h and h.Health > 0 and rt) or (C.ESPTeam and p.Team ~= nil and p.Team == LP.Team) then
 			hide(o)
 		else
-			-- tudo e calculado a partir do HumanoidRootPart (nao treme com a animacao)
+			-- centro no HumanoidRootPart; altura vem do corpo real (cabeca ate os pes)
 			local base = rt.Position
 			local rp, on = Cam:WorldToViewportPoint(base)
 			if not on then
 				hide(o)
 			else
-				local top = Cam:WorldToViewportPoint(base + Vector3.new(0, 2.7, 0))
-				local bot = Cam:WorldToViewportPoint(base - Vector3.new(0, 3.1, 0))
+				local ty, by = bodyExtents(o, ch, rt, edt)
+				local top = Cam:WorldToViewportPoint(Vector3.new(base.X, base.Y + ty, base.Z))
+				local bot = Cam:WorldToViewportPoint(Vector3.new(base.X, base.Y + by, base.Z))
 				local topY, botY = top.Y, bot.Y
 				local hh = math.abs(botY - topY)
-				local ww = hh * 0.55
+				local ww = math.max(hh * 0.55, 14)
 				local cx = rp.X
 
 				o.ln.Visible = C.Line
