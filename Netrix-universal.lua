@@ -1,4 +1,4 @@
--- NETRIX HUB UNIVERSAL v8
+-- NETRIX HUB UNIVERSAL v9
 local function note(t)
 	pcall(function()
 		game:GetService("StarterGui"):SetCore("SendNotification", {Title = "Netrix Hub", Text = t, Duration = 5})
@@ -31,16 +31,37 @@ local W = Color3.new(1, 1, 1)
 local BLURPLE = Color3.fromRGB(88, 101, 242)
 local FB, FM = Enum.Font.GothamBold, Enum.Font.GothamMedium
 
-local mobile = UIS.TouchEnabled and not UIS.MouseEnabled
+local mobile0 = UIS.TouchEnabled and not UIS.MouseEnabled
 local draw = false
 pcall(function() draw = Drawing ~= nil and Drawing.new ~= nil end)
 
-local C = {Aim = false, AimHold = false, Part = "Cabeca", TeamCheck = false, WallCheck = false, ShowFOV = false,
-	FOV = 150, AimSpeed = 6, Line = false, Skel = false, Box = false, Name = false, Health = false,
-	Dist = false, ECol = "Roxo", ESPTeam = false, Walk = false, WalkVal = 32, Jump = false,
-	JumpVal = 100, InfJump = false, Noclip = false, Fly = false, FlyVal = 60, Bright = false,
-	CamOn = false, CamFOV = 70, CamDist = false, CamDistVal = 30, AFK = false}
+local C = {Aim = false, Trigger = "Sempre", AimKey = "E", Part = "Cabeca", TeamCheck = false, WallCheck = false,
+    ShowFOV = false, FOV = 150, Line = false, Skel = false, Box = false, Name = false, Health = false,
+    Dist = false, ECol = "Roxo", ESPTeam = false, Walk = false, WalkVal = 32, Jump = false,
+    JumpVal = 100, InfJump = false, Noclip = false, Fly = false, FlyVal = 60, Bright = false,
+    CamOn = false, CamFOV = 70, CamDist = false, CamDistVal = 30, AFK = false,
+    Platform = "Auto", AimMode = "Auto", FOVOrigin = "Auto", MenuKey = "RightShift"}
 local CB = {}
+
+-- configuracao salva (so funciona se o executor tiver readfile/writefile)
+local HS = game:GetService("HttpService")
+local CFGFILE = "NetrixHubUniversal.json"
+pcall(function()
+    if isfile and readfile and isfile(CFGFILE) then
+        local d = HS:JSONDecode(readfile(CFGFILE))
+        for k, v in pairs(d) do
+            if C[k] ~= nil and type(C[k]) == type(v) then C[k] = v end
+        end
+    end
+end)
+C.Bright = false
+
+-- PC ou celular (Auto detecta sozinho; da pra forcar na aba PC)
+local function isMobile()
+    if C.Platform == "PC" then return false end
+    if C.Platform == "Celular" then return true end
+    return mobile0
+end
 local ord = 0
 local function L() ord = ord + 1 return ord end
 
@@ -288,6 +309,19 @@ local function pick(pg, txt, opts, key)
 		C[key] = opts[i]
 	end)
 end
+local listening
+local function bindKey(pg, txt, key)
+    local r = row(pg, 32)
+    T(r, txt, UDim2.new(0, 12, 0, 0), UDim2.new(1, -110, 1, 0), FM, 12, W)
+    local b = R(N("TextButton", {Size = UDim2.new(0, 84, 0, 20), Position = UDim2.new(1, -94, 0.5, -10),
+        BackgroundColor3 = PANEL2, Text = C[key], Font = FB, TextSize = 10, TextColor3 = W, AutoButtonColor = false,
+        BorderSizePixel = 0}, r), 5)
+    stroke(b, LINE, 1, 0.2)
+    b.MouseButton1Click:Connect(function()
+        listening = {key = key, btn = b}
+        b.Text = "Pressione..."
+    end)
+end
 
 -- quadradinho com a imagem do flutuante (usado na aba Discord)
 local function discordIcon(par, px, pos)
@@ -299,13 +333,12 @@ local A = tab("Aim", "AIM")
 local E = tab("ESP", "ESP")
 local P = tab("Player", "PLAYER")
 local M = tab("Misc", "MISC")
+local PCt = tab("PC", "PC")
 local D = tab("Discord", "DISCORD")
 
 sec(A, "Mira")
 toggle(A, "Ativar Aimbot", "Aim")
-toggle(A, "Mirar so segurando botao direito (PC)", "AimHold")
 pick(A, "Mirar em", {"Cabeca", "Tronco"}, "Part")
-slider(A, "Forca da mira (15+ = trava total)", 1, 20, "AimSpeed")
 sec(A, "Filtros")
 toggle(A, "Team Check", "TeamCheck")
 toggle(A, "Wall Check", "WallCheck")
@@ -346,6 +379,29 @@ toggle(M, "Fullbright", "Bright")
 sec(M, "Outros")
 toggle(M, "Anti AFK", "AFK")
 btn(M, "Fechar hub", "FECHAR", Color3.fromRGB(210, 60, 90), function() Gui:Destroy() end)
+sec(PCt, "Plataforma")
+pick(PCt, "Plataforma", {"Auto", "PC", "Celular"}, "Platform")
+sec(PCt, "Mira no PC")
+pick(PCt, "Ativar mira", {"Sempre", "Botao direito", "Tecla"}, "Trigger")
+bindKey(PCt, "Tecla da mira", "AimKey")
+pick(PCt, "Modo da mira", {"Auto", "Camera", "Mouse"}, "AimMode")
+pick(PCt, "Centro do FOV", {"Auto", "Centro", "Mouse"}, "FOVOrigin")
+sec(PCt, "Atalhos")
+bindKey(PCt, "Tecla do painel", "MenuKey")
+sec(PCt, "Configuracao")
+btn(PCt, "Salvar configuracao", "SALVAR", AC, function()
+    local okk = pcall(function() writefile(CFGFILE, HS:JSONEncode(C)) end)
+    note(okk and "Configuracao salva!" or "Seu executor nao permite salvar arquivos.")
+end)
+btn(PCt, "Apagar configuracao", "APAGAR", Color3.fromRGB(210, 60, 90), function()
+    local okk = pcall(function() delfile(CFGFILE) end)
+    note(okk and "Configuracao apagada." or "Nao ha configuracao salva.")
+end)
+local pcHint = T(PCt, "Auto = o script escolhe sozinho. Modo Mouse move o cursor ate o alvo (jogos com mouse livre); modo Camera gira a camera. Em Tecla, segure a tecla para mirar. Esc cancela ao escolher uma tecla.",
+    UDim2.new(), UDim2.new(1, 0, 0, 64), FM, 10, SUB)
+pcHint.TextWrapped = true
+pcHint.LayoutOrder = L()
+pcHint.TextYAlignment = Enum.TextYAlignment.Top
 
 -- ---------- aba Discord ----------
 local DISCORD = "https://discord.gg/yQyvXYM2CK"
@@ -457,6 +513,19 @@ Fl.MouseButton1Up:Connect(function() tw(FlScale, 0.1, {Scale = 1}) end)
 drag(Fl, Fl, function() setOpen(not open) end)
 setOpen(true)
 note("Painel carregado! Toque na imagem para abrir/fechar.")
+-- atalhos de teclado (PC): tecla do painel e escolha de teclas
+local keyConn = UIS.InputBegan:Connect(function(i, gp)
+    if i.UserInputType ~= Enum.UserInputType.Keyboard then return end
+    if listening then
+        local l = listening
+        listening = nil
+        if i.KeyCode ~= Enum.KeyCode.Escape then C[l.key] = i.KeyCode.Name end
+        l.btn.Text = C[l.key]
+        return
+    end
+    if gp then return end
+    if i.KeyCode.Name == C.MenuKey then setOpen(not open) end
+end)
 
 -- ==========================================
 -- AIMBOT
@@ -473,9 +542,18 @@ if draw then
 	end)
 end
 
+local function viewCenter()
+    return Cam.ViewportSize / 2
+end
+
+-- centro do FOV: celular = meio da tela | PC = cursor (ou meio da tela se o mouse estiver travado)
 local function center()
-	if mobile then return Cam.ViewportSize / 2 end
-	return UIS:GetMouseLocation()
+    local o = C.FOVOrigin
+    if o == "Centro" then return viewCenter() end
+    if o == "Mouse" then return UIS:GetMouseLocation() end
+    if isMobile() then return viewCenter() end
+    if UIS.MouseBehavior == Enum.MouseBehavior.LockCenter then return viewCenter() end
+    return UIS:GetMouseLocation()
 end
 
 local rayP = RaycastParams.new()
@@ -541,84 +619,96 @@ local function target(c0)
 	return best
 end
 
-local aimPoint, aimOwner
+local aimPoint
 local accX, accY = 0, 0
+local AIM_SMOOTH = 14 -- forca da mira FIXA (14 = quase travada, sem tremer)
+
+-- quando a mira funciona (no PC da pra escolher: sempre, botao direito ou uma tecla)
+local function triggerOn()
+    if isMobile() then return true end
+    if C.Trigger == "Botao direito" then
+        return UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
+    elseif C.Trigger == "Tecla" then
+        local okk, kc = pcall(function() return Enum.KeyCode[C.AimKey] end)
+        return (okk and kc and UIS:IsKeyDown(kc)) and true or false
+    end
+    return true
+end
+
+-- mover o mouse em vez de girar a camera
+local function useMouse()
+    if not mousemoverel then return false end
+    if C.AimMode == "Mouse" then return true end
+    if C.AimMode == "Camera" then return false end
+    return (not isMobile()) and UIS.MouseBehavior == Enum.MouseBehavior.LockCenter
+end
 
 local function aim(dt)
-	if C.AimHold and not mobile and not UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-		lockP, aimPoint = nil, nil
-		accX, accY = 0, 0
-		return
-	end
-	local t = target(center())
-	if not t then
-		aimPoint = nil
-		accX, accY = 0, 0
-		return
-	end
+    dt = dt or (1 / 60)
+    if not triggerOn() then
+        lockP, aimPoint = nil, nil
+        accX, accY = 0, 0
+        return
+    end
+    local t = target(center())
+    if not t then
+        aimPoint = nil
+        accX, accY = 0, 0
+        return
+    end
+    aimPoint = t.Position
 
-	-- 15 a 20 = trava total; abaixo disso a puxada fica cada vez mais leve
-	local soft = C.AimSpeed < 15
+    -- forca fixa e igual em qualquer FPS (nao treme)
+    local a = math.clamp(1 - math.exp(-0.8 * AIM_SMOOTH * AIM_SMOOTH * dt), 0, 1)
 
-	-- ponto de mira filtrado: nao treme junto com a animacao do boneco
-	if (not aimPoint) or aimOwner ~= lockP or not soft then
-		aimPoint = t.Position
-	else
-		aimPoint = aimPoint:Lerp(t.Position, 1 - math.exp(-40 * dt))
-	end
-	aimOwner = lockP
+    if useMouse() then
+        -- move o mouse ate o alvo (guarda os pixels quebrados)
+        local pos = Cam:WorldToViewportPoint(aimPoint)
+        local ref = viewCenter()
+        if UIS.MouseBehavior ~= Enum.MouseBehavior.LockCenter then ref = UIS:GetMouseLocation() end
+        local dx, dy = pos.X - ref.X, pos.Y - ref.Y
+        if math.sqrt(dx * dx + dy * dy) < 1.5 then return end
+        local g = math.min(a, 0.6)
+        accX = accX + dx * g
+        accY = accY + dy * g
+        local mx = accX >= 0 and math.floor(accX) or math.ceil(accX)
+        local my = accY >= 0 and math.floor(accY) or math.ceil(accY)
+        accX, accY = accX - mx, accY - my
+        if mx ~= 0 or my ~= 0 then mousemoverel(mx, my) end
+    else
+        local camPos = Cam.CFrame.Position
+        local cur = Cam.CFrame.LookVector
+        local want = aimPoint - camPos
+        if want.Magnitude < 0.1 then return end
+        want = want.Unit
 
-	local a = 1
-	if soft then
-		a = 1 - math.exp(-0.8 * C.AimSpeed * C.AimSpeed * dt)
-		-- puxadinha de leve: fraca na borda do FOV, um pouco mais forte perto do alvo
-		local sp = Cam:WorldToViewportPoint(aimPoint)
-		local dpx = (Vector2.new(sp.X, sp.Y) - center()).Magnitude
-		local near = math.clamp(1 - dpx / math.max(C.FOV, 1), 0, 1)
-		a = a * (0.2 + 0.8 * near * near)
-	end
-	a = math.clamp(a, 0, 1)
+        -- camera em terceira pessoa gira em volta do jogador (o ponto de foco).
+        -- Resolve a direcao CONTANDO com a nova posicao da camera (varias passadas),
+        -- e coloca a camera nessa posicao: a mira cai exatamente na cabeca.
+        local focus = Cam.Focus.Position
+        local toFocus = focus - camPos
+        local zd = toFocus.Magnitude
+        local third = zd > 0.5 and zd < 120 and cur:Dot(toFocus.Unit) > 0.999
+        if third then
+            for _ = 1, 4 do
+                local d2 = aimPoint - (focus - want * zd)
+                if d2.Magnitude < 0.1 then break end
+                want = d2.Unit
+            end
+        end
 
-	if not mobile and mousemoverel and UIS.MouseBehavior == Enum.MouseBehavior.LockCenter then
-		-- jogos com mouse travado no centro: move o mouse ate o alvo (guarda os pixels quebrados)
-		local pos = Cam:WorldToViewportPoint(aimPoint)
-		local c0 = Cam.ViewportSize / 2
-		local dx, dy = pos.X - c0.X, pos.Y - c0.Y
-		if math.sqrt(dx * dx + dy * dy) < 1.5 then return end
-		local g = math.min(a, 0.6)
-		accX = accX + dx * g
-		accY = accY + dy * g
-		local mx = accX >= 0 and math.floor(accX) or math.ceil(accX)
-		local my = accY >= 0 and math.floor(accY) or math.ceil(accY)
-		accX, accY = accX - mx, accY - my
-		if mx ~= 0 or my ~= 0 then mousemoverel(mx, my) end
-	else
-		local camPos = Cam.CFrame.Position
-		local cur = Cam.CFrame.LookVector
-		local delta = aimPoint - camPos
-		if delta.Magnitude < 0.1 then return end
-		local want = delta.Unit
+        -- zona morta minuscula: evita micro tremor
+        local ang = math.acos(math.clamp(cur:Dot(want), -1, 1))
+        if ang < math.rad(0.05) then return end
 
-		-- camera em terceira pessoa se reposiciona atras do jogador a cada quadro:
-		-- calcula a direcao ja contando com essa nova posicao (evita o balanco/tremor)
-		local focus = Cam.Focus.Position
-		local zd = (camPos - focus).Magnitude
-		if zd > 0.5 and zd < 120 then
-			local d2 = aimPoint - (focus - want * zd)
-			if d2.Magnitude > 0.1 then want = d2.Unit end
-		end
-
-		-- zona morta: nao mexe por diferencas minusculas
-		local ang = math.acos(math.clamp(cur:Dot(want), -1, 1))
-		if ang < (soft and math.rad(0.12) or math.rad(0.03)) then return end
-
-		local newLook = want
-		if a < 1 then
-			local l = cur:Lerp(want, a)
-			if l.Magnitude > 1e-3 then newLook = l.Unit end
-		end
-		Cam.CFrame = CFrame.lookAt(camPos, camPos + newLook)
-	end
+        local newLook = want
+        if a < 1 then
+            local l = cur:Lerp(want, a)
+            if l.Magnitude > 1e-3 then newLook = l.Unit end
+        end
+        local pos = third and (focus - newLook * zd) or camPos
+        Cam.CFrame = CFrame.lookAt(pos, pos + newLook)
+    end
 end
 
 -- ==========================================
@@ -1049,6 +1139,7 @@ local boundFirst = pcall(function()
 end)
 
 Gui.Destroying:Connect(function()
+    if keyConn then keyConn:Disconnect() end
 	if bound then pcall(function() RS:UnbindFromRenderStep("NetrixHubLoop") end) end
 	if conn then conn:Disconnect() end
 	if boundDraw then pcall(function() RS:UnbindFromRenderStep("NetrixHubDraw") end) end
