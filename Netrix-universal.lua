@@ -130,7 +130,7 @@ local Bar = N("Frame", {Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 
 local tl = T(Bar, "", UDim2.new(0, 14, 0, 0), UDim2.new(0, 110, 1, 0), FB, 16, W)
 tl.RichText = true
 tl.Text = 'NETRIX <font color="rgb(170,115,255)">HUB</font>'
-T(Bar, "UNIVERSAL  •  v8", UDim2.new(0, 118, 0, 2), UDim2.new(0, 140, 1, 0), FM, 10, SUB)
+T(Bar, "YouTube: Netrix Oficial", UDim2.new(0, 118, 0, 2), UDim2.new(0, 220, 1, 0), FM, 10, SUB)
 local X = R(N("TextButton", {Text = "", BackgroundColor3 = PANEL2, BackgroundTransparency = 0.1,
 	AutoButtonColor = false, Size = UDim2.new(0, 28, 0, 28), Position = UDim2.new(1, -38, 0, 6),
 	BorderSizePixel = 0}, Bar), 8)
@@ -289,25 +289,10 @@ local function pick(pg, txt, opts, key)
 	end)
 end
 
--- icone quadrado do Discord (se tiver o ID da imagem, coloque aqui entre aspas: "rbxassetid://...")
-local DISCORD_ICON = ""
+-- quadradinho com a imagem do flutuante (usado na aba Discord)
 local function discordIcon(par, px, pos)
-	local rad = math.floor(px * 0.28)
-	local f = R(N("Frame", {Size = UDim2.new(0, px, 0, px), Position = pos, BackgroundColor3 = BLURPLE,
-		BorderSizePixel = 0}, par), rad)
-	if DISCORD_ICON ~= "" then
-		R(N("ImageLabel", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Image = DISCORD_ICON,
-			ScaleType = Enum.ScaleType.Crop}, f), rad)
-	else
-		local body = R(N("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0),
-			Size = UDim2.new(0.66, 0, 0.5, 0), BackgroundColor3 = W, BorderSizePixel = 0}, f), math.floor(px * 0.2))
-		for _, x in ipairs({0.3, 0.7}) do
-			R(N("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(x, 0, 0.5, 0),
-				Size = UDim2.new(0.18, 0, 0.3, 0), BackgroundColor3 = BLURPLE, BorderSizePixel = 0}, body),
-				math.floor(px * 0.1))
-		end
-	end
-	return f
+	return R(N("ImageLabel", {Size = UDim2.new(0, px, 0, px), Position = pos, BackgroundTransparency = 1,
+		BorderSizePixel = 0, Image = IMG, ScaleType = Enum.ScaleType.Crop}, par), math.floor(px * 0.28))
 end
 
 local A = tab("Aim", "AIM")
@@ -325,7 +310,7 @@ sec(A, "Mira")
 toggle(A, "Ativar Aimbot", "Aim")
 toggle(A, "Mirar so segurando botao direito (PC)", "AimHold")
 pick(A, "Mirar em", {"Cabeca", "Tronco"}, "Part")
-slider(A, "Velocidade da mira", 1, 20, "AimSpeed")
+slider(A, "Forca da mira (15+ = trava total)", 1, 20, "AimSpeed")
 sec(A, "Filtros")
 toggle(A, "Team Check", "TeamCheck")
 toggle(A, "Wall Check", "WallCheck")
@@ -467,7 +452,7 @@ end)
 
 -- botao flutuante (quadrado arredondado, sem borda)
 local Fl = R(N("ImageButton", {Size = UDim2.new(0, 58, 0, 58), Position = UDim2.new(0, 16, 0.5, -29),
-BackgroundTransparency = 1, BorderSizePixel = 0, Image = IMG, ScaleType = Enum.ScaleType.Crop,
+	BackgroundTransparency = 1, BorderSizePixel = 0, Image = IMG, ScaleType = Enum.ScaleType.Crop,
 	AutoButtonColor = false, ZIndex = 50}, Gui), 16)
 local FlScale = N("UIScale", {Scale = 1}, Fl)
 Fl.MouseEnter:Connect(function() tw(FlScale, 0.15, {Scale = 1.1}) end)
@@ -561,28 +546,76 @@ local function target(c0)
 	return best
 end
 
+local aimPoint, aimOwner
+local accX, accY = 0, 0
+
 local function aim(dt)
 	if C.AimHold and not mobile and not UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-		lockP = nil
+		lockP, aimPoint = nil, nil
+		accX, accY = 0, 0
 		return
 	end
 	local t = target(center())
-	if not t then return end
+	if not t then
+		aimPoint = nil
+		accX, accY = 0, 0
+		return
+	end
 
-	-- 15 a 20 = trava total; abaixo disso, mira suave
+	-- 15 a 20 = trava total; abaixo disso a puxada fica cada vez mais leve
+	local soft = C.AimSpeed < 15
+
+	-- ponto de mira filtrado: nao treme junto com a animacao do boneco
+	if (not aimPoint) or aimOwner ~= lockP or not soft then
+		aimPoint = t.Position
+	else
+		aimPoint = aimPoint:Lerp(t.Position, 1 - math.exp(-40 * dt))
+	end
+	aimOwner = lockP
+
 	local a = 1
-	if C.AimSpeed < 15 then a = 1 - math.exp(-C.AimSpeed * 9 * dt) end
-	a = math.clamp(a, 0.05, 1)
+	if soft then a = 1 - math.exp(-0.8 * C.AimSpeed * C.AimSpeed * dt) end
+	a = math.clamp(a, 0, 1)
 
 	if not mobile and mousemoverel and UIS.MouseBehavior == Enum.MouseBehavior.LockCenter then
-		-- jogos com mouse travado no centro (camera propria): move o mouse ate o alvo
-		local pos = Cam:WorldToViewportPoint(t.Position)
+		-- jogos com mouse travado no centro: move o mouse ate o alvo (guarda os pixels quebrados)
+		local pos = Cam:WorldToViewportPoint(aimPoint)
 		local c0 = Cam.ViewportSize / 2
+		local dx, dy = pos.X - c0.X, pos.Y - c0.Y
+		if math.sqrt(dx * dx + dy * dy) < 1.5 then return end
 		local g = math.min(a, 0.6)
-		mousemoverel((pos.X - c0.X) * g, (pos.Y - c0.Y) * g)
+		accX = accX + dx * g
+		accY = accY + dy * g
+		local mx = accX >= 0 and math.floor(accX) or math.ceil(accX)
+		local my = accY >= 0 and math.floor(accY) or math.ceil(accY)
+		accX, accY = accX - mx, accY - my
+		if mx ~= 0 or my ~= 0 then mousemoverel(mx, my) end
 	else
-		local goal = CFrame.new(Cam.CFrame.Position, t.Position)
-		Cam.CFrame = Cam.CFrame:Lerp(goal, a)
+		local camPos = Cam.CFrame.Position
+		local cur = Cam.CFrame.LookVector
+		local delta = aimPoint - camPos
+		if delta.Magnitude < 0.1 then return end
+		local want = delta.Unit
+
+		-- camera em terceira pessoa se reposiciona atras do jogador a cada quadro:
+		-- calcula a direcao ja contando com essa nova posicao (evita o balanco/tremor)
+		local focus = Cam.Focus.Position
+		local zd = (camPos - focus).Magnitude
+		if zd > 0.5 and zd < 120 then
+			local d2 = aimPoint - (focus - want * zd)
+			if d2.Magnitude > 0.1 then want = d2.Unit end
+		end
+
+		-- zona morta: nao mexe por diferencas minusculas
+		local ang = math.acos(math.clamp(cur:Dot(want), -1, 1))
+		if ang < (soft and math.rad(0.12) or math.rad(0.03)) then return end
+
+		local newLook = want
+		if a < 1 then
+			local l = cur:Lerp(want, a)
+			if l.Magnitude > 1e-3 then newLook = l.Unit end
+		end
+		Cam.CFrame = CFrame.lookAt(camPos, camPos + newLook)
 	end
 end
 
@@ -840,7 +873,7 @@ CB.Jump = function(v)
 end
 CB.Fly = function(v) if not v then stopFly() end end
 CB.Bright = setBright
-CB.Aim = function(v) if not v then lockP = nil end end
+CB.Aim = function(v) if not v then lockP, aimPoint = nil, nil end end
 
 local nc, ncT = {}, 0
 local ncConn = RS.Stepped:Connect(function()
@@ -1004,4 +1037,4 @@ end)
 if not ok then
 	warn("[Netrix Hub] erro: " .. tostring(err))
 	note("ERRO: " .. string.sub(tostring(err), 1, 150))
-end	
+end
