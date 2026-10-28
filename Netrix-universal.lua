@@ -1105,4 +1105,63 @@ local function stepDraw(dt)
 	pcall(applyFOV)
 	pcall(applyZoom)
 	if C.Aim then pcall(aim, dt) end
-	if zoomExtra then zoomFinal = Ca
+	if zoomExtra then zoomFinal = Cam.CFrame end
+
+	if fov then
+		fov.Visible = C.ShowFOV
+		if C.ShowFOV then
+			fov.Radius = C.FOV
+			fov.Position = center()
+		end
+	end
+	if draw then pcall(esp) end
+end
+
+local bound = pcall(function()
+	RS:BindToRenderStep("NetrixHubLoop", Enum.RenderPriority.Camera.Value + 1, stepMain)
+end)
+local conn
+if not bound then conn = RS.RenderStepped:Connect(stepMain) end
+
+local boundDraw = pcall(function()
+	RS:BindToRenderStep("NetrixHubDraw", Enum.RenderPriority.Last.Value, stepDraw)
+end)
+local conn2
+if not boundDraw then conn2 = RS.RenderStepped:Connect(stepDraw) end
+
+-- antes da camera do jogo: desfaz o deslocamento do zoom
+local boundFirst = pcall(function()
+	RS:BindToRenderStep("NetrixHubFirst", Enum.RenderPriority.First.Value, undoZoom)
+end)
+
+Gui.Destroying:Connect(function()
+    if keyConn then keyConn:Disconnect() end
+	if bound then pcall(function() RS:UnbindFromRenderStep("NetrixHubLoop") end) end
+	if conn then conn:Disconnect() end
+	if boundDraw then pcall(function() RS:UnbindFromRenderStep("NetrixHubDraw") end) end
+	if conn2 then conn2:Disconnect() end
+	if boundFirst then pcall(function() RS:UnbindFromRenderStep("NetrixHubFirst") end) end
+	pcall(undoZoom)
+	ncConn:Disconnect()
+	jConn:Disconnect()
+	idleConn:Disconnect()
+	stopFly()
+	setBright(false)
+	if fovConn then fovConn:Disconnect() end
+	if origFOV then Cam.FieldOfView = origFOV end
+	local h = hum()
+	if h then
+		if C.Walk then h.WalkSpeed = 16 end
+		if C.Jump then h.JumpPower = 50 end
+	end
+	if fov then pcall(function() fov:Remove() end) end
+	for _, o in pairs(ESP) do kill(o) end
+end)
+
+if not draw then note("Seu executor nao tem Drawing: ESP e FOV desativados.") end
+end)
+
+if not ok then
+	warn("[Netrix Hub] erro: " .. tostring(err))
+	note("ERRO: " .. string.sub(tostring(err), 1, 150))
+end
