@@ -151,7 +151,7 @@ local Bar = N("Frame", {Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 
 local tl = T(Bar, "", UDim2.new(0, 14, 0, 4), UDim2.new(1, -64, 0, 20), FB, 16, W)
 tl.RichText = true
 tl.Text = 'NETRIX HUB <font color="rgb(170,115,255)">UNIVERSAL</font>'
-T(Bar, "YouTube: Netrix Ofc", UDim2.new(0, 14, 0, 23), UDim2.new(1, -64, 0, 14), FM, 10, SUB)
+T(Bar, "YouTube: Netrix Oficial", UDim2.new(0, 14, 0, 23), UDim2.new(1, -64, 0, 14), FM, 10, SUB)
 local X = R(N("TextButton", {Text = "", BackgroundColor3 = PANEL2, BackgroundTransparency = 0.1,
 	AutoButtonColor = false, Size = UDim2.new(0, 28, 0, 28), Position = UDim2.new(1, -38, 0, 6),
 	BorderSizePixel = 0}, Bar), 8)
@@ -333,7 +333,8 @@ local A = tab("Aim", "AIM")
 local E = tab("ESP", "ESP")
 local P = tab("Player", "PLAYER")
 local M = tab("Misc", "MISC")
-local PCt = tab("PC", "PC")
+local PCt
+pcall(function() PCt = tab("PC", "PC") end)
 local D = tab("Discord", "DISCORD")
 
 sec(A, "Mira")
@@ -379,6 +380,8 @@ toggle(M, "Fullbright", "Bright")
 sec(M, "Outros")
 toggle(M, "Anti AFK", "AFK")
 btn(M, "Fechar hub", "FECHAR", Color3.fromRGB(210, 60, 90), function() Gui:Destroy() end)
+if PCt then
+local okPC, ePC = pcall(function()
 sec(PCt, "Plataforma")
 pick(PCt, "Plataforma", {"Auto", "PC", "Celular"}, "Platform")
 sec(PCt, "Mira no PC")
@@ -402,6 +405,9 @@ local pcHint = T(PCt, "Auto = o script escolhe sozinho. Modo Mouse move o cursor
 pcHint.TextWrapped = true
 pcHint.LayoutOrder = L()
 pcHint.TextYAlignment = Enum.TextYAlignment.Top
+end)
+if not okPC then warn("[Netrix Hub] aba PC: " .. tostring(ePC)) end
+end
 
 -- ---------- aba Discord ----------
 local DISCORD = "https://discord.gg/yQyvXYM2CK"
@@ -514,7 +520,9 @@ drag(Fl, Fl, function() setOpen(not open) end)
 setOpen(true)
 note("Painel carregado! Toque na imagem para abrir/fechar.")
 -- atalhos de teclado (PC): tecla do painel e escolha de teclas
-local keyConn = UIS.InputBegan:Connect(function(i, gp)
+local keyConn
+pcall(function()
+keyConn = UIS.InputBegan:Connect(function(i, gp)
     if i.UserInputType ~= Enum.UserInputType.Keyboard then return end
     if listening then
         local l = listening
@@ -525,6 +533,7 @@ local keyConn = UIS.InputBegan:Connect(function(i, gp)
     end
     if gp then return end
     if i.KeyCode.Name == C.MenuKey then setOpen(not open) end
+end)
 end)
 
 -- ==========================================
@@ -1090,7 +1099,7 @@ local function stepMain(dt)
 	local h = hum()
 	if h then
 		if C.Walk and h.WalkSpeed ~= C.WalkVal then h.WalkSpeed = C.WalkVal end
-		if C.Jump then
+		
 			if not h.UseJumpPower then h.UseJumpPower = true end
 			if h.JumpPower ~= C.JumpVal then h.JumpPower = C.JumpVal end
 		end
