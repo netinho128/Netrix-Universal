@@ -151,7 +151,7 @@ local Bar = N("Frame", {Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 
 local tl = T(Bar, "", UDim2.new(0, 14, 0, 4), UDim2.new(1, -64, 0, 20), FB, 16, W)
 tl.RichText = true
 tl.Text = 'NETRIX HUB <font color="rgb(170,115,255)">UNIVERSAL</font>'
-T(Bar, "YouTube: Netrix Oficial", UDim2.new(0, 14, 0, 23), UDim2.new(1, -64, 0, 14), FM, 10, SUB)
+T(Bar, "YouTube: Netrix Ofc", UDim2.new(0, 14, 0, 23), UDim2.new(1, -64, 0, 14), FM, 10, SUB)
 local X = R(N("TextButton", {Text = "", BackgroundColor3 = PANEL2, BackgroundTransparency = 0.1,
 	AutoButtonColor = false, Size = UDim2.new(0, 28, 0, 28), Position = UDim2.new(1, -38, 0, 6),
 	BorderSizePixel = 0}, Bar), 8)
@@ -546,14 +546,10 @@ local function viewCenter()
     return Cam.ViewportSize / 2
 end
 
--- centro do FOV: celular = meio da tela | PC = cursor (ou meio da tela se o mouse estiver travado)
+-- centro do FOV: FIXO no meio da tela (so segue o cursor se voce escolher "Mouse" na aba PC)
 local function center()
-    local o = C.FOVOrigin
-    if o == "Centro" then return viewCenter() end
-    if o == "Mouse" then return UIS:GetMouseLocation() end
-    if isMobile() then return viewCenter() end
-    if UIS.MouseBehavior == Enum.MouseBehavior.LockCenter then return viewCenter() end
-    return UIS:GetMouseLocation()
+    if C.FOVOrigin == "Mouse" then return UIS:GetMouseLocation() end
+    return viewCenter()
 end
 
 local rayP = RaycastParams.new()
@@ -1109,63 +1105,4 @@ local function stepDraw(dt)
 	pcall(applyFOV)
 	pcall(applyZoom)
 	if C.Aim then pcall(aim, dt) end
-	if zoomExtra then zoomFinal = Cam.CFrame end
-
-	if fov then
-		fov.Visible = C.ShowFOV
-		if C.ShowFOV then
-			fov.Radius = C.FOV
-			fov.Position = center()
-		end
-	end
-	if draw then pcall(esp) end
-end
-
-local bound = pcall(function()
-	RS:BindToRenderStep("NetrixHubLoop", Enum.RenderPriority.Camera.Value + 1, stepMain)
-end)
-local conn
-if not bound then conn = RS.RenderStepped:Connect(stepMain) end
-
-local boundDraw = pcall(function()
-	RS:BindToRenderStep("NetrixHubDraw", Enum.RenderPriority.Last.Value, stepDraw)
-end)
-local conn2
-if not boundDraw then conn2 = RS.RenderStepped:Connect(stepDraw) end
-
--- antes da camera do jogo: desfaz o deslocamento do zoom
-local boundFirst = pcall(function()
-	RS:BindToRenderStep("NetrixHubFirst", Enum.RenderPriority.First.Value, undoZoom)
-end)
-
-Gui.Destroying:Connect(function()
-    if keyConn then keyConn:Disconnect() end
-	if bound then pcall(function() RS:UnbindFromRenderStep("NetrixHubLoop") end) end
-	if conn then conn:Disconnect() end
-	if boundDraw then pcall(function() RS:UnbindFromRenderStep("NetrixHubDraw") end) end
-	if conn2 then conn2:Disconnect() end
-	if boundFirst then pcall(function() RS:UnbindFromRenderStep("NetrixHubFirst") end) end
-	pcall(undoZoom)
-	ncConn:Disconnect()
-	jConn:Disconnect()
-	idleConn:Disconnect()
-	stopFly()
-	setBright(false)
-	if fovConn then fovConn:Disconnect() end
-	if origFOV then Cam.FieldOfView = origFOV end
-	local h = hum()
-	if h then
-		if C.Walk then h.WalkSpeed = 16 end
-		if C.Jump then h.JumpPower = 50 end
-	end
-	if fov then pcall(function() fov:Remove() end) end
-	for _, o in pairs(ESP) do kill(o) end
-end)
-
-if not draw then note("Seu executor nao tem Drawing: ESP e FOV desativados.") end
-end)
-
-if not ok then
-	warn("[Netrix Hub] erro: " .. tostring(err))
-	note("ERRO: " .. string.sub(tostring(err), 1, 150))
-end
+	if zoomExtra then zoomFinal = Ca
