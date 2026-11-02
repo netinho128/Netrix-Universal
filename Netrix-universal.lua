@@ -1,4 +1,4 @@
- -- NETRIX HUB | UNIVERSAL v10 (leve)
+-- NETRIX HUB UNIVERSAL v11
 local function note(t)
 	pcall(function()
 		game:GetService("StarterGui"):SetCore("SendNotification", {Title = "Netrix Hub", Text = t, Duration = 5})
@@ -18,6 +18,7 @@ local Cam = WS.CurrentCamera
 
 local IMG = "rbxassetid://99262930883927"
 local DISCORD = "https://discord.gg/yQyvXYM2CK"
+local YOUTUBE_NAME = "Netrix _ Ofc" -- nome que aparece la embaixo do painel
 local AC = Color3.fromRGB(150, 90, 255)
 local AC2 = Color3.fromRGB(205, 130, 255)
 local BG = Color3.fromRGB(12, 11, 18)
@@ -132,8 +133,8 @@ end
 -- PAINEL
 -- ==========================================
 local vp = Cam.ViewportSize
-local MW = math.min(430, vp.X - 24)
-local MH = math.min(400, vp.Y - 24)
+local MW = math.min(480, vp.X - 24)
+local MH = math.min(360, vp.Y - 24)
 
 local Main = Round(New("Frame", {Size = UDim2.new(0, MW, 0, MH), Position = UDim2.new(0.5, -MW / 2, 0.5, -MH / 2),
 	BackgroundColor3 = BG, BorderSizePixel = 0, ClipsDescendants = true}, Gui), 14)
@@ -144,8 +145,8 @@ Round(New("ImageLabel", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 
 	ScaleType = Enum.ScaleType.Crop, Active = false}, Main), 14)
 
 local Header = New("Frame", {Size = UDim2.new(1, 0, 0, 46), BackgroundTransparency = 1, Active = true}, Main)
-Label(Header, "NETRIX HUB", UDim2.new(0, 14, 0, 5), UDim2.new(1, -60, 0, 22), FB, 16, W)
-Label(Header, "Universal  |  Aimbot  ESP  Speed", UDim2.new(0, 14, 0, 26), UDim2.new(1, -60, 0, 14), FM, 10, SUB)
+Label(Header, "Netrix Hub Universal", UDim2.new(0, 14, 0, 5), UDim2.new(1, -60, 0, 22), FB, 16, W)
+Label(Header, "Aimbot  |  ESP  |  Speed", UDim2.new(0, 14, 0, 26), UDim2.new(1, -60, 0, 14), FM, 10, SUB)
 local Close = Round(New("TextButton", {Size = UDim2.new(0, 26, 0, 26), Position = UDim2.new(1, -36, 0, 10), BackgroundColor3 = AC,
 	Text = "X", Font = FB, TextSize = 12, TextColor3 = W, AutoButtonColor = false, BorderSizePixel = 0}, Header), 7)
 draggable(Header, Main)
@@ -153,8 +154,11 @@ draggable(Header, Main)
 New("Frame", {Size = UDim2.new(1, -28, 0, 1), Position = UDim2.new(0, 14, 0, 46), BackgroundColor3 = AC,
 	BackgroundTransparency = 0.5, BorderSizePixel = 0}, Main)
 
-local TabBar = New("Frame", {Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 52), BackgroundTransparency = 1}, Main)
-New("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, TabBar)
+local TabBar = New("Frame", {Size = UDim2.new(0, 92, 1, -92), Position = UDim2.new(0, 10, 0, 54), BackgroundTransparency = 1}, Main)
+New("UIListLayout", {Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder}, TabBar)
+
+-- nome do canal la embaixo
+Label(Main, "YouTube: " .. YOUTUBE_NAME, UDim2.new(0, 10, 1, -30), UDim2.new(1, -20, 0, 22), FM, 11, SUB, Enum.TextXAlignment.Center)
 
 local pages, tabBtns = {}, {}
 local function showTab(name)
@@ -166,9 +170,9 @@ local function showTab(name)
 end
 
 local function addTab(name, label)
-	local b = Round(New("TextButton", {Size = UDim2.new(0.2, -3, 1, 0), BackgroundColor3 = PANEL2, Text = label, Font = FB,
-		TextSize = 10, TextColor3 = SUB, AutoButtonColor = false, BorderSizePixel = 0, LayoutOrder = nextOrder()}, TabBar), 7)
-	local pg = New("ScrollingFrame", {Size = UDim2.new(1, -20, 1, -92), Position = UDim2.new(0, 10, 0, 86), BackgroundTransparency = 1,
+	local b = Round(New("TextButton", {Size = UDim2.new(1, 0, 0, 34), BackgroundColor3 = PANEL2, Text = label, Font = FB,
+		TextSize = 11, TextColor3 = SUB, AutoButtonColor = false, BorderSizePixel = 0, LayoutOrder = nextOrder()}, TabBar), 7)
+	local pg = New("ScrollingFrame", {Size = UDim2.new(1, -122, 1, -92), Position = UDim2.new(0, 112, 0, 54), BackgroundTransparency = 1,
 		BorderSizePixel = 0, ScrollBarThickness = 3, ScrollBarImageColor3 = AC, CanvasSize = UDim2.new(),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y, Visible = false}, Main)
 	New("UIListLayout", {Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder}, pg)
@@ -474,6 +478,17 @@ local function killObj(o)
 	for _, d in pairs(o) do pcall(function() d:Remove() end) end
 end
 
+-- projeta um ponto do mundo na tela usando a camera ATUAL (a mesma que o aimbot acabou de mover)
+local function project(wp)
+	local rel = Cam.CFrame:PointToObjectSpace(wp)
+	if rel.Z >= -0.05 then return nil end
+	local vs = Cam.ViewportSize
+	local t = math.tan(math.rad(Cam.FieldOfView) / 2)
+	local nx = (rel.X / -rel.Z) / (t * (vs.X / vs.Y))
+	local ny = (rel.Y / -rel.Z) / t
+	return Vector2.new((nx * 0.5 + 0.5) * vs.X, (0.5 - ny * 0.5) * vs.Y)
+end
+
 local function esp()
 	if not draw then return end
 	if not (C.Line or C.Box or C.Name or C.Health or C.Dist) then
@@ -499,40 +514,42 @@ local function esp()
 					local root = ch:FindFirstChild("HumanoidRootPart")
 					local hum = ch:FindFirstChildOfClass("Humanoid")
 					local head = ch:FindFirstChild("Head")
-					local rp, on = Cam:WorldToViewportPoint(root.Position)
-					if on and rp.Z > 0 then
+					local rp = project(root.Position)
+					if rp then
 						-- caixa presa no corpo: topo na cabeca, base nos pes
 						local topW = head and (head.Position + Vector3.new(0, head.Size.Y / 2 + 0.15, 0)) or (root.Position + Vector3.new(0, 2.5, 0))
 						local feet = math.max(3, hum.HipHeight + root.Size.Y / 2)
-						local tp = Cam:WorldToViewportPoint(topW)
-						local bp = Cam:WorldToViewportPoint(root.Position - Vector3.new(0, feet, 0))
-						local h = math.abs(bp.Y - tp.Y)
-						local w = h * 0.55
-						shown = true
+						local tp = project(topW)
+						local bp = project(root.Position - Vector3.new(0, feet, 0))
+						if tp and bp then
+							local h = math.abs(bp.Y - tp.Y)
+							local w = h * 0.55
+							shown = true
 
-						o.Line.Visible = C.Line
-						if C.Line then
-							o.Line.Color = col
-							o.Line.From = Vector2.new(vsize.X / 2, 0) -- a linha vem de cima da tela
-							o.Line.To = Vector2.new(rp.X, rp.Y)
-						end
+							o.Line.Visible = C.Line
+							if C.Line then
+								o.Line.Color = col
+								o.Line.From = Vector2.new(vsize.X / 2, 0) -- a linha vem de cima da tela
+								o.Line.To = Vector2.new(rp.X, rp.Y)
+							end
 
-						o.Box.Visible = C.Box
-						if C.Box then
-							o.Box.Color = col
-							o.Box.Size = Vector2.new(w, h)
-							o.Box.Position = Vector2.new(rp.X - w / 2, tp.Y)
-						end
+							o.Box.Visible = C.Box
+							if C.Box then
+								o.Box.Color = col
+								o.Box.Size = Vector2.new(w, h)
+								o.Box.Position = Vector2.new(rp.X - w / 2, tp.Y)
+							end
 
-						local parts = {}
-						if C.Name then parts[#parts + 1] = p.Name end
-						if C.Health then parts[#parts + 1] = "[" .. math.floor(hum.Health) .. " HP]" end
-						if C.Dist then parts[#parts + 1] = math.floor((root.Position - camPos).Magnitude) .. "m" end
-						o.Text.Visible = #parts > 0
-						if #parts > 0 then
-							o.Text.Color = col
-							o.Text.Text = table.concat(parts, " ")
-							o.Text.Position = Vector2.new(rp.X, tp.Y - 16)
+							local parts = {}
+							if C.Name then parts[#parts + 1] = p.Name end
+							if C.Health then parts[#parts + 1] = "[" .. math.floor(hum.Health) .. " HP]" end
+							if C.Dist then parts[#parts + 1] = math.floor((root.Position - camPos).Magnitude) .. "m" end
+							o.Text.Visible = #parts > 0
+							if #parts > 0 then
+								o.Text.Color = col
+								o.Text.Text = table.concat(parts, " ")
+								o.Text.Position = Vector2.new(rp.X, tp.Y - 16)
+							end
 						end
 					end
 				end
