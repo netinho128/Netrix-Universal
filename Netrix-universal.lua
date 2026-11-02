@@ -1,4 +1,4 @@
--- NETRIX HUB UNIVERSAL v11
+-- NETRIX HUB UNIVERSAL v12
 local function note(t)
 	pcall(function()
 		game:GetService("StarterGui"):SetCore("SendNotification", {Title = "Netrix Hub", Text = t, Duration = 5})
@@ -13,17 +13,23 @@ local RS = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local WS = game:GetService("Workspace")
 local HS = game:GetService("HttpService")
+local TS = game:GetService("TweenService")
 local LP = Players.LocalPlayer
 local Cam = WS.CurrentCamera
 
 local IMG = "rbxassetid://99262930883927"
 local DISCORD = "https://discord.gg/yQyvXYM2CK"
-local YOUTUBE_NAME = "Netrix _ Ofc" -- nome que aparece la embaixo do painel
+local YOUTUBE_NAME = "Netrix _ OFC"
+local VERSION = "v12"
+local GUI_NAME = "NetrixHubV12"
+
 local AC = Color3.fromRGB(150, 90, 255)
 local AC2 = Color3.fromRGB(205, 130, 255)
-local BG = Color3.fromRGB(12, 11, 18)
-local PANEL2 = Color3.fromRGB(32, 29, 48)
-local OFF = Color3.fromRGB(58, 56, 76)
+local BG = Color3.fromRGB(13, 11, 21)
+local BG2 = Color3.fromRGB(22, 17, 38)
+local PANEL = Color3.fromRGB(20, 17, 33)
+local PANEL2 = Color3.fromRGB(34, 30, 52)
+local OFF = Color3.fromRGB(60, 57, 80)
 local SUB = Color3.fromRGB(150, 148, 178)
 local W = Color3.new(1, 1, 1)
 local RED = Color3.fromRGB(210, 60, 90)
@@ -36,8 +42,9 @@ local mobile0 = UIS.TouchEnabled and not UIS.MouseEnabled
 local C = {
 	Aim = false, Part = "Cabeca", TeamCheck = false, WallCheck = false,
 	ShowFOV = false, FOV = 150,
-	Line = false, Box = false, Name = false, Health = false, Dist = false, ECol = "Roxo", ESPTeam = false,
+	Line = false, Box = false, Name = false, Health = false, Dist = false, ECol = "Roxo", ESPTeam = false, ESPOffset = 0,
 	Walk = false, WalkVal = 32, Jump = false, JumpVal = 100, InfJump = false, AFK = false,
+	Noclip = false, Fly = false, FlyVal = 60,
 	Platform = "Auto", Trigger = "Sempre", AimKey = "E", AimMode = "Auto", FOVOrigin = "Centro", MenuKey = "RightShift",
 }
 local CFGFILE = "NetrixHubUniversal.json"
@@ -49,6 +56,8 @@ pcall(function()
 		end
 	end
 end)
+-- movimento sempre comeca desligado (evita voar/atravessar parede ao abrir)
+C.Noclip, C.Fly = false, false
 
 local function isMobile()
 	if C.Platform == "PC" then return false end
@@ -82,7 +91,11 @@ end
 local ord = 0
 local function nextOrder() ord = ord + 1 return ord end
 
--- remove uma copia anterior do hub
+local quick = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local function tween(o, props, info) TS:Create(o, info or quick, props):Play() end
+
+-- remove copias anteriores do hub
+pcall(function() RS:UnbindFromRenderStep(GUI_NAME) end)
 pcall(function() RS:UnbindFromRenderStep("NetrixHubV10") end)
 local roots = {}
 pcall(function() if gethui then roots[#roots + 1] = gethui() end end)
@@ -90,12 +103,14 @@ pcall(function() roots[#roots + 1] = game:GetService("CoreGui") end)
 pcall(function() roots[#roots + 1] = LP:FindFirstChild("PlayerGui") end)
 for _, root in ipairs(roots) do
 	pcall(function()
-		local old = root:FindFirstChild("NetrixHubV10")
-		if old then old:Destroy() end
+		for _, n in ipairs({GUI_NAME, "NetrixHubV10"}) do
+			local old = root:FindFirstChild(n)
+			if old then old:Destroy() end
+		end
 	end)
 end
 
-local Gui = New("ScreenGui", {Name = "NetrixHubV10", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
+local Gui = New("ScreenGui", {Name = GUI_NAME, ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
 local parented = false
 pcall(function() if syn and syn.protect_gui then syn.protect_gui(Gui) end end)
 pcall(function() if gethui then Gui.Parent = gethui() parented = Gui.Parent ~= nil end end)
@@ -133,92 +148,138 @@ end
 -- PAINEL
 -- ==========================================
 local vp = Cam.ViewportSize
-local MW = math.min(480, vp.X - 24)
-local MH = math.min(360, vp.Y - 24)
+local MW = math.min(500, vp.X - 24)
+local MH = math.min(350, vp.Y - 24)
 
-local Main = Round(New("Frame", {Size = UDim2.new(0, MW, 0, MH), Position = UDim2.new(0.5, -MW / 2, 0.5, -MH / 2),
+local Main = Round(New("Frame", {Name = "Main", Size = UDim2.new(0, MW, 0, MH), Position = UDim2.new(0.5, -MW / 2, 0.5, -MH / 2),
 	BackgroundColor3 = BG, BorderSizePixel = 0, ClipsDescendants = true}, Gui), 14)
-Stroke(Main, AC, 1.5, 0.1)
+New("UIGradient", {Rotation = 90, Color = ColorSequence.new(BG, BG2)}, Main)
+local mainStroke = Stroke(Main, AC, 1.5, 0.15)
+New("UIGradient", {Rotation = 35, Color = ColorSequence.new(AC, AC2)}, mainStroke)
+local scale = New("UIScale", {Scale = 1}, Main)
 
 -- imagem do flutuante no fundo do painel (bem transparente)
 Round(New("ImageLabel", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Image = IMG, ImageTransparency = 0.9,
-	ScaleType = Enum.ScaleType.Crop, Active = false}, Main), 14)
+	ScaleType = Enum.ScaleType.Crop, Active = false, ZIndex = 0}, Main), 14)
 
 local Header = New("Frame", {Size = UDim2.new(1, 0, 0, 46), BackgroundTransparency = 1, Active = true}, Main)
-Label(Header, "Netrix Hub Universal", UDim2.new(0, 14, 0, 5), UDim2.new(1, -60, 0, 22), FB, 16, W)
-Label(Header, "Aimbot  |  ESP  |  Speed", UDim2.new(0, 14, 0, 26), UDim2.new(1, -60, 0, 14), FM, 10, SUB)
-local Close = Round(New("TextButton", {Size = UDim2.new(0, 26, 0, 26), Position = UDim2.new(1, -36, 0, 10), BackgroundColor3 = AC,
-	Text = "X", Font = FB, TextSize = 12, TextColor3 = W, AutoButtonColor = false, BorderSizePixel = 0}, Header), 7)
+Label(Header, "Netrix Hub Universal", UDim2.new(0, 16, 0, 5), UDim2.new(1, -90, 0, 22), FB, 16, W)
+Label(Header, "Aimbot  |  ESP  |  Voo  |  Speed", UDim2.new(0, 16, 0, 26), UDim2.new(1, -90, 0, 14), FM, 10, SUB)
+
+local function HeaderBtn(txt, x, hoverCol)
+	local b = Round(New("TextButton", {Size = UDim2.new(0, 26, 0, 26), Position = UDim2.new(1, x, 0, 10), BackgroundColor3 = PANEL2,
+		Text = txt, Font = FB, TextSize = 12, TextColor3 = W, AutoButtonColor = false, BorderSizePixel = 0}, Header), 7)
+	b.MouseEnter:Connect(function() tween(b, {BackgroundColor3 = hoverCol}) end)
+	b.MouseLeave:Connect(function() tween(b, {BackgroundColor3 = PANEL2}) end)
+	return b
+end
+local Close = HeaderBtn("X", -38, RED)
+local Mini = HeaderBtn("-", -70, AC)
 draggable(Header, Main)
 
-New("Frame", {Size = UDim2.new(1, -28, 0, 1), Position = UDim2.new(0, 14, 0, 46), BackgroundColor3 = AC,
-	BackgroundTransparency = 0.5, BorderSizePixel = 0}, Main)
+New("Frame", {Size = UDim2.new(1, -32, 0, 1), Position = UDim2.new(0, 16, 0, 46), BackgroundColor3 = AC,
+	BackgroundTransparency = 0.6, BorderSizePixel = 0}, Main)
 
-local TabBar = New("Frame", {Size = UDim2.new(0, 92, 1, -92), Position = UDim2.new(0, 10, 0, 54), BackgroundTransparency = 1}, Main)
+local TabBar = New("Frame", {Size = UDim2.new(0, 90, 1, -88), Position = UDim2.new(0, 10, 0, 54), BackgroundTransparency = 1}, Main)
 New("UIListLayout", {Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder}, TabBar)
 
--- nome do canal la embaixo
-Label(Main, "YouTube: " .. YOUTUBE_NAME, UDim2.new(0, 10, 1, -30), UDim2.new(1, -20, 0, 22), FM, 11, SUB, Enum.TextXAlignment.Center)
+-- cartao de fundo do conteudo
+Round(New("Frame", {Size = UDim2.new(1, -116, 1, -88), Position = UDim2.new(0, 106, 0, 52), BackgroundColor3 = PANEL,
+	BackgroundTransparency = 0.35, BorderSizePixel = 0}, Main), 10)
 
-local pages, tabBtns = {}, {}
+-- rodape
+Label(Main, "YouTube: " .. YOUTUBE_NAME, UDim2.new(0, 16, 1, -28), UDim2.new(0.6, 0, 0, 20), FM, 10, SUB)
+Label(Main, VERSION, UDim2.new(0.6, 0, 1, -28), UDim2.new(0.4, -16, 0, 20), FB, 10, AC2, Enum.TextXAlignment.Right)
+
+local pages, tabBtns, tabBars = {}, {}, {}
 local function showTab(name)
 	for n, pg in pairs(pages) do pg.Visible = (n == name) end
 	for n, b in pairs(tabBtns) do
-		b.BackgroundColor3 = (n == name) and AC or PANEL2
-		b.TextColor3 = (n == name) and W or SUB
+		local on = (n == name)
+		tween(b, {BackgroundColor3 = on and AC or PANEL2, BackgroundTransparency = on and 0 or 0.25})
+		b.TextColor3 = on and W or SUB
+		tabBars[n].Visible = on
 	end
 end
 
 local function addTab(name, label)
-	local b = Round(New("TextButton", {Size = UDim2.new(1, 0, 0, 34), BackgroundColor3 = PANEL2, Text = label, Font = FB,
-		TextSize = 11, TextColor3 = SUB, AutoButtonColor = false, BorderSizePixel = 0, LayoutOrder = nextOrder()}, TabBar), 7)
-	local pg = New("ScrollingFrame", {Size = UDim2.new(1, -122, 1, -92), Position = UDim2.new(0, 112, 0, 54), BackgroundTransparency = 1,
+	local b = Round(New("TextButton", {Size = UDim2.new(1, 0, 0, 34), BackgroundColor3 = PANEL2, BackgroundTransparency = 0.25,
+		Text = label, Font = FB, TextSize = 11, TextColor3 = SUB, TextXAlignment = Enum.TextXAlignment.Left,
+		AutoButtonColor = false, BorderSizePixel = 0, LayoutOrder = nextOrder()}, TabBar), 8)
+	New("UIPadding", {PaddingLeft = UDim.new(0, 18)}, b)
+	local bar = Round(New("Frame", {Size = UDim2.new(0, 3, 0, 16), Position = UDim2.new(0, -12, 0.5, -8), BackgroundColor3 = W,
+		BorderSizePixel = 0, Visible = false}, b), 2)
+	local pg = New("ScrollingFrame", {Size = UDim2.new(1, -128, 1, -100), Position = UDim2.new(0, 112, 0, 58), BackgroundTransparency = 1,
 		BorderSizePixel = 0, ScrollBarThickness = 3, ScrollBarImageColor3 = AC, CanvasSize = UDim2.new(),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y, Visible = false}, Main)
 	New("UIListLayout", {Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder}, pg)
-	pages[name], tabBtns[name] = pg, b
+	New("UIPadding", {PaddingRight = UDim.new(0, 6), PaddingBottom = UDim.new(0, 4)}, pg)
+	pages[name], tabBtns[name], tabBars[name] = pg, b, bar
 	b.MouseButton1Click:Connect(function() showTab(name) end)
 	return pg
 end
 
 local function Section(pg, txt)
-	Label(pg, txt, UDim2.new(), UDim2.new(1, -6, 0, 20), FB, 11, AC2).LayoutOrder = nextOrder()
+	local f = New("Frame", {Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1, LayoutOrder = nextOrder()}, pg)
+	Label(f, string.upper(txt), UDim2.new(0, 2, 0, 0), UDim2.new(1, 0, 1, -4), FB, 10, AC2)
+	New("Frame", {Size = UDim2.new(1, 0, 0, 1), Position = UDim2.new(0, 0, 1, -3), BackgroundColor3 = AC,
+		BackgroundTransparency = 0.75, BorderSizePixel = 0}, f)
 end
 
 local function Info(pg, txt, h)
-	local t = Label(pg, txt, UDim2.new(), UDim2.new(1, -6, 0, h or 30), FM, 10, SUB)
+	local t = Label(pg, txt, UDim2.new(), UDim2.new(1, 0, 0, h or 30), FM, 10, SUB)
 	t.TextWrapped = true
 	t.TextYAlignment = Enum.TextYAlignment.Top
 	t.LayoutOrder = nextOrder()
 end
 
 local function Row(pg, h)
-	return Round(New("Frame", {Size = UDim2.new(1, -6, 0, h), BackgroundColor3 = PANEL2, BackgroundTransparency = 0.1,
+	local r = Round(New("Frame", {Size = UDim2.new(1, 0, 0, h), BackgroundColor3 = PANEL2, BackgroundTransparency = 0.2,
 		BorderSizePixel = 0, LayoutOrder = nextOrder()}, pg), 8)
+	local s = Stroke(r, AC, 1, 0.9)
+	return r, s
 end
 
-local function Toggle(pg, txt, key, cb)
-	local r = Row(pg, 36)
-	Label(r, txt, UDim2.new(0, 12, 0, 0), UDim2.new(1, -70, 1, 0), FM, 12, W)
+local function hoverable(hit, stroke)
+	hit.MouseEnter:Connect(function() tween(stroke, {Transparency = 0.55}) end)
+	hit.MouseLeave:Connect(function() tween(stroke, {Transparency = 0.9}) end)
+end
+
+local function rowTitle(r, txt, desc, right)
+	if desc then
+		Label(r, txt, UDim2.new(0, 12, 0, 6), UDim2.new(1, -right, 0, 18), FB, 12, W)
+		local d = Label(r, desc, UDim2.new(0, 12, 0, 24), UDim2.new(1, -right, 0, 16), FM, 10, SUB)
+		d.TextTruncate = Enum.TextTruncate.AtEnd
+	else
+		Label(r, txt, UDim2.new(0, 12, 0, 0), UDim2.new(1, -right, 1, 0), FB, 12, W)
+	end
+end
+
+local function Toggle(pg, txt, key, cb, desc)
+	local r, s = Row(pg, desc and 46 or 38)
+	rowTitle(r, txt, desc, 72)
 	local pill = Round(New("Frame", {AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -12, 0.5, 0), Size = UDim2.new(0, 38, 0, 20),
 		BackgroundColor3 = C[key] and AC or OFF, BorderSizePixel = 0}, r), 10)
 	local knob = Round(New("Frame", {AnchorPoint = Vector2.new(0, 0.5), Size = UDim2.new(0, 14, 0, 14), BackgroundColor3 = W,
 		Position = C[key] and UDim2.new(1, -17, 0.5, 0) or UDim2.new(0, 3, 0.5, 0), BorderSizePixel = 0}, pill), 7)
 	local hit = New("TextButton", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 5}, r)
+	hoverable(hit, s)
 	hit.MouseButton1Click:Connect(function()
 		C[key] = not C[key]
-		pill.BackgroundColor3 = C[key] and AC or OFF
-		knob.Position = C[key] and UDim2.new(1, -17, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)
+		tween(pill, {BackgroundColor3 = C[key] and AC or OFF})
+		tween(knob, {Position = C[key] and UDim2.new(1, -17, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)})
 		if cb then cb(C[key]) end
 	end)
 end
 
-local function Button(pg, txt, label, color, cb)
-	local r = Row(pg, 36)
-	Label(r, txt, UDim2.new(0, 12, 0, 0), UDim2.new(1, -110, 1, 0), FM, 12, W)
+local function Button(pg, txt, label, color, cb, desc)
+	local r, s = Row(pg, desc and 46 or 38)
+	rowTitle(r, txt, desc, 110)
 	local b = Round(New("TextButton", {Size = UDim2.new(0, 84, 0, 22), Position = UDim2.new(1, -94, 0.5, -11), BackgroundColor3 = color,
-		Text = label, Font = FB, TextSize = 10, TextColor3 = W, AutoButtonColor = false, BorderSizePixel = 0}, r), 6)
+		Text = label, Font = FB, TextSize = 10, TextColor3 = W, AutoButtonColor = false, BorderSizePixel = 0, ZIndex = 6}, r), 6)
+	hoverable(b, s)
 	b.MouseButton1Click:Connect(function() cb(b) end)
+	return b
 end
 
 local function Pick(pg, txt, opts, key)
@@ -232,10 +293,11 @@ end
 
 local listening
 local function BindKey(pg, txt, key)
-	local r = Row(pg, 36)
-	Label(r, txt, UDim2.new(0, 12, 0, 0), UDim2.new(1, -110, 1, 0), FM, 12, W)
+	local r, s = Row(pg, 38)
+	rowTitle(r, txt, nil, 110)
 	local b = Round(New("TextButton", {Size = UDim2.new(0, 84, 0, 22), Position = UDim2.new(1, -94, 0.5, -11), BackgroundColor3 = OFF,
-		Text = C[key], Font = FB, TextSize = 10, TextColor3 = W, AutoButtonColor = false, BorderSizePixel = 0}, r), 6)
+		Text = C[key], Font = FB, TextSize = 10, TextColor3 = W, AutoButtonColor = false, BorderSizePixel = 0, ZIndex = 6}, r), 6)
+	hoverable(b, s)
 	b.MouseButton1Click:Connect(function()
 		listening = {key = key, btn = b}
 		b.Text = "Pressione..."
@@ -243,12 +305,13 @@ local function BindKey(pg, txt, key)
 end
 
 local function Slider(pg, txt, mn, mx, key, cb)
-	local r = Row(pg, 56)
-	Label(r, txt, UDim2.new(0, 12, 0, 5), UDim2.new(0.6, 0, 0, 18), FM, 12, W)
-	local val = Label(r, "", UDim2.new(0.6, 0, 0, 5), UDim2.new(0.4, -12, 0, 18), FB, 12, AC2, Enum.TextXAlignment.Right)
+	local r, s = Row(pg, 58)
+	Label(r, txt, UDim2.new(0, 12, 0, 6), UDim2.new(0.6, 0, 0, 18), FB, 12, W)
+	local val = Label(r, "", UDim2.new(0.6, 0, 0, 6), UDim2.new(0.4, -12, 0, 18), FB, 12, AC2, Enum.TextXAlignment.Right)
 	-- area de toque grande: encosta em qualquer lugar da linha e arrasta
-	local hit = New("TextButton", {Position = UDim2.new(0, 0, 0, 24), Size = UDim2.new(1, 0, 0, 32), BackgroundTransparency = 1,
+	local hit = New("TextButton", {Position = UDim2.new(0, 0, 0, 26), Size = UDim2.new(1, 0, 0, 32), BackgroundTransparency = 1,
 		Text = "", AutoButtonColor = false}, r)
+	hoverable(hit, s)
 	local track = Round(New("Frame", {AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 14, 0.5, 0), Size = UDim2.new(1, -28, 0, 6),
 		BackgroundColor3 = OFF, BorderSizePixel = 0}, hit), 3)
 	local fill = Round(New("Frame", {Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = AC, BorderSizePixel = 0}, track), 3)
@@ -450,6 +513,8 @@ end
 
 -- ==========================================
 -- ESP
+-- Usa a propria projecao da camera (WorldToViewportPoint), a mesma do aimbot,
+-- e roda por ultimo no frame: a caixa acompanha o corpo sem escorregar.
 -- ==========================================
 local COLS = {Roxo = Color3.fromRGB(170, 110, 255), Vermelho = Color3.fromRGB(255, 70, 90), Verde = Color3.fromRGB(70, 230, 130),
 	Azul = Color3.fromRGB(80, 170, 255), Branco = W}
@@ -478,16 +543,14 @@ local function killObj(o)
 	for _, d in pairs(o) do pcall(function() d:Remove() end) end
 end
 
--- projeta um ponto do mundo na tela usando a camera ATUAL (a mesma que o aimbot acabou de mover)
-local function project(wp)
-	local rel = Cam.CFrame:PointToObjectSpace(wp)
-	if rel.Z >= -0.05 then return nil end
-	local vs = Cam.ViewportSize
-	local t = math.tan(math.rad(Cam.FieldOfView) / 2)
-	local nx = (rel.X / -rel.Z) / (t * (vs.X / vs.Y))
-	local ny = (rel.Y / -rel.Z) / t
-	return Vector2.new((nx * 0.5 + 0.5) * vs.X, (0.5 - ny * 0.5) * vs.Y)
-end
+keep(Players.PlayerRemoving:Connect(function(p)
+	local o = ESP[p]
+	if o then
+		killObj(o)
+		ESP[p] = nil
+	end
+	if lockP == p then lockP = nil end
+end))
 
 local function esp()
 	if not draw then return end
@@ -502,6 +565,7 @@ local function esp()
 	local col = COLS[C.ECol] or COLS.Roxo
 	local camPos = Cam.CFrame.Position
 	local vsize = Cam.ViewportSize
+	local yoff = C.ESPOffset
 
 	for _, p in ipairs(Players:GetPlayers()) do
 		if p ~= LP then
@@ -514,41 +578,45 @@ local function esp()
 					local root = ch:FindFirstChild("HumanoidRootPart")
 					local hum = ch:FindFirstChildOfClass("Humanoid")
 					local head = ch:FindFirstChild("Head")
-					local rp = project(root.Position)
-					if rp then
+					local rp = Cam:WorldToViewportPoint(root.Position)
+					if rp.Z > 0 then
 						-- caixa presa no corpo: topo na cabeca, base nos pes
 						local topW = head and (head.Position + Vector3.new(0, head.Size.Y / 2 + 0.15, 0)) or (root.Position + Vector3.new(0, 2.5, 0))
 						local feet = math.max(3, hum.HipHeight + root.Size.Y / 2)
-						local tp = project(topW)
-						local bp = project(root.Position - Vector3.new(0, feet, 0))
-						if tp and bp then
+						local tp = Cam:WorldToViewportPoint(topW)
+						local bp = Cam:WorldToViewportPoint(root.Position - Vector3.new(0, feet, 0))
+						if tp.Z > 0 and bp.Z > 0 then
+							local top = math.min(tp.Y, bp.Y) + yoff
 							local h = math.abs(bp.Y - tp.Y)
 							local w = h * 0.55
-							shown = true
+							local cx, cy = rp.X, rp.Y + yoff
+							if h >= 4 then
+								shown = true
 
-							o.Line.Visible = C.Line
-							if C.Line then
-								o.Line.Color = col
-								o.Line.From = Vector2.new(vsize.X / 2, 0) -- a linha vem de cima da tela
-								o.Line.To = Vector2.new(rp.X, rp.Y)
-							end
+								o.Line.Visible = C.Line
+								if C.Line then
+									o.Line.Color = col
+									o.Line.From = Vector2.new(vsize.X / 2, 0) -- a linha vem de cima da tela
+									o.Line.To = Vector2.new(cx, cy)
+								end
 
-							o.Box.Visible = C.Box
-							if C.Box then
-								o.Box.Color = col
-								o.Box.Size = Vector2.new(w, h)
-								o.Box.Position = Vector2.new(rp.X - w / 2, tp.Y)
-							end
+								o.Box.Visible = C.Box
+								if C.Box then
+									o.Box.Color = col
+									o.Box.Size = Vector2.new(w, h)
+									o.Box.Position = Vector2.new(cx - w / 2, top)
+								end
 
-							local parts = {}
-							if C.Name then parts[#parts + 1] = p.Name end
-							if C.Health then parts[#parts + 1] = "[" .. math.floor(hum.Health) .. " HP]" end
-							if C.Dist then parts[#parts + 1] = math.floor((root.Position - camPos).Magnitude) .. "m" end
-							o.Text.Visible = #parts > 0
-							if #parts > 0 then
-								o.Text.Color = col
-								o.Text.Text = table.concat(parts, " ")
-								o.Text.Position = Vector2.new(rp.X, tp.Y - 16)
+								local parts = {}
+								if C.Name then parts[#parts + 1] = p.Name end
+								if C.Health then parts[#parts + 1] = "[" .. math.floor(hum.Health) .. " HP]" end
+								if C.Dist then parts[#parts + 1] = math.floor((root.Position - camPos).Magnitude) .. "m" end
+								o.Text.Visible = #parts > 0
+								if #parts > 0 then
+									o.Text.Color = col
+									o.Text.Text = table.concat(parts, " ")
+									o.Text.Position = Vector2.new(cx, top - 16)
+								end
 							end
 						end
 					end
@@ -560,7 +628,7 @@ local function esp()
 end
 
 -- ==========================================
--- SPEED, PULO E ANTI AFK
+-- SPEED, PULO, NOCLIP, VOO E ANTI AFK
 -- ==========================================
 local function hum()
 	local ch = LP.Character
@@ -585,6 +653,121 @@ keep(UIS.JumpRequest:Connect(function()
 	end
 end))
 
+-- Noclip: atravessa paredes. Guarda quais partes foram alteradas para devolver depois.
+local clipped = {}
+local function restoreClip()
+	for part in pairs(clipped) do
+		if part.Parent then part.CanCollide = true end
+		clipped[part] = nil
+	end
+end
+
+keep(RS.Stepped:Connect(function()
+	if not C.Noclip then return end
+	local ch = LP.Character
+	if not ch then return end
+	for _, d in ipairs(ch:GetChildren()) do
+		if d:IsA("BasePart") and d.CanCollide then
+			d.CanCollide = false
+			clipped[d] = true
+		end
+	end
+end))
+
+-- Voo: PC usa W A S D + Espaco (sobe) + Shift (desce). Celular usa o analogico
+-- (anda para onde a camera olha) e os botoes SUBIR / DESCER.
+local flyBV, flyBG
+local upHeld, downHeld = false, false
+
+local function flyOff()
+	if flyBV then flyBV:Destroy() flyBV = nil end
+	if flyBG then flyBG:Destroy() flyBG = nil end
+	local h = hum()
+	if h then h.PlatformStand = false end
+end
+
+local FlyUI = New("Frame", {Name = "FlyUI", Size = UDim2.new(0, 70, 0, 100), AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.new(1, -18, 0.5, 0), BackgroundTransparency = 1, Visible = false, ZIndex = 30}, Gui)
+local function flyBtn(txt, y, setter)
+	local b = Round(New("TextButton", {Size = UDim2.new(1, 0, 0, 44), Position = UDim2.new(0, 0, 0, y), BackgroundColor3 = BG2,
+		BackgroundTransparency = 0.15, Text = txt, Font = FB, TextSize = 11, TextColor3 = W, AutoButtonColor = false,
+		BorderSizePixel = 0, ZIndex = 31}, FlyUI), 10)
+	Stroke(b, AC, 1.2, 0.2)
+	b.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
+			setter(true)
+			tween(b, {BackgroundColor3 = AC})
+		end
+	end)
+	b.InputEnded:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
+			setter(false)
+			tween(b, {BackgroundColor3 = BG2})
+		end
+	end)
+end
+flyBtn("SUBIR", 0, function(v) upHeld = v end)
+flyBtn("DESCER", 56, function(v) downHeld = v end)
+
+keep(RS.Heartbeat:Connect(function()
+	local showUI = C.Fly and isMobile()
+	if FlyUI.Visible ~= showUI then FlyUI.Visible = showUI end
+
+	if not C.Fly then
+		if flyBV or flyBG then flyOff() end
+		upHeld, downHeld = false, false
+		return
+	end
+
+	local ch = LP.Character
+	local root = ch and ch:FindFirstChild("HumanoidRootPart")
+	local h = hum()
+	if not root or not h or h.Health <= 0 then return end
+
+	if not flyBV or flyBV.Parent ~= root then
+		if flyBV then flyBV:Destroy() end
+		if flyBG then flyBG:Destroy() end
+		flyBV = New("BodyVelocity", {MaxForce = Vector3.new(1e9, 1e9, 1e9), Velocity = Vector3.new(0, 0, 0)}, root)
+		flyBG = New("BodyGyro", {MaxTorque = Vector3.new(1e9, 1e9, 1e9), P = 9e4, D = 1e3, CFrame = root.CFrame}, root)
+	end
+	h.PlatformStand = true
+
+	local cf = Cam.CFrame
+	local look = cf.LookVector
+	local move = Vector3.new(0, 0, 0)
+
+	if isMobile() then
+		local md = h.MoveDirection
+		if md.Magnitude > 0.05 then
+			local flat = Vector3.new(look.X, 0, look.Z)
+			local fl = math.max(flat.Magnitude, 0.1)
+			local f = flat.Magnitude > 0.01 and md:Dot(flat.Unit) or 0
+			move = md + Vector3.new(0, f * look.Y / fl, 0)
+		end
+	else
+		if UIS:IsKeyDown(Enum.KeyCode.W) then move = move + look end
+		if UIS:IsKeyDown(Enum.KeyCode.S) then move = move - look end
+		if UIS:IsKeyDown(Enum.KeyCode.D) then move = move + cf.RightVector end
+		if UIS:IsKeyDown(Enum.KeyCode.A) then move = move - cf.RightVector end
+		if UIS:IsKeyDown(Enum.KeyCode.Space) then upHeld = true end
+		if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then downHeld = true end
+	end
+	if upHeld then move = move + Vector3.new(0, 1, 0) end
+	if downHeld then move = move - Vector3.new(0, 1, 0) end
+	if not isMobile() then upHeld, downHeld = false, false end
+
+	if move.Magnitude > 0.05 then
+		flyBV.Velocity = move.Unit * C.FlyVal
+	else
+		flyBV.Velocity = Vector3.new(0, 0, 0)
+	end
+
+	local flat = Vector3.new(look.X, 0, look.Z)
+	if flat.Magnitude > 0.01 then
+		flyBG.CFrame = CFrame.lookAt(root.Position, root.Position + flat)
+	end
+end))
+
 pcall(function()
 	local VU = game:GetService("VirtualUser")
 	keep(LP.Idled:Connect(function()
@@ -605,29 +788,29 @@ local PCt = addTab("PC", "PC")
 local D = addTab("Discord", "DISCORD")
 
 Section(A, "Mira")
-Toggle(A, "Ativar Aimbot", "Aim")
+Toggle(A, "Ativar Aimbot", "Aim", nil, "Gruda a mira no inimigo mais próximo")
 Pick(A, "Mirar em", {"Cabeca", "Tronco"}, "Part")
 Section(A, "Filtros")
-Toggle(A, "Team Check (ignorar meu time)", "TeamCheck")
-Toggle(A, "Wall Check (so quem aparece)", "WallCheck")
-Section(A, "Circulo FOV")
-Toggle(A, "Mostrar circulo FOV", "ShowFOV")
+Toggle(A, "Team Check", "TeamCheck", nil, "Ignora quem é do seu time")
+Toggle(A, "Wall Check", "WallCheck", nil, "Só mira em quem está visível")
+Section(A, "Círculo FOV")
+Toggle(A, "Mostrar círculo", "ShowFOV")
 Slider(A, "Tamanho do FOV", 20, 500, "FOV")
-Info(A, "O FOV fica fixo no meio da tela. A forca da mira e fixa (14).", 28)
+Info(A, "O FOV fica fixo no meio da tela. A força da mira é fixa.", 28)
 
 Section(E, "Desenhos")
-Toggle(E, "ESP Line", "Line")
-Toggle(E, "ESP Caixa", "Box")
-Section(E, "Informacoes")
+Toggle(E, "ESP Line", "Line", nil, "Linha do topo da tela até o jogador")
+Toggle(E, "ESP Caixa", "Box", nil, "Quadrado em volta do jogador")
+Section(E, "Informações")
 Toggle(E, "ESP Name", "Name")
 Toggle(E, "ESP Vida", "Health")
-Toggle(E, "ESP Distancia", "Dist")
+Toggle(E, "ESP Distância", "Dist")
 Section(E, "Ajustes")
 Pick(E, "Cor do ESP", {"Roxo", "Vermelho", "Verde", "Azul", "Branco"}, "ECol")
 Toggle(E, "Ignorar meu time", "ESPTeam")
 
 Section(P, "Movimento")
-Info(P, "Aviso: em alguns jogos o Speed funciona e em outros nao.", 28)
+Info(P, "Aviso: em alguns jogos o Speed funciona e em outros não.", 28)
 Toggle(P, "Speed", "Walk", function(on)
 	if on then
 		note("Em alguns jogos o Speed funciona e em outros nao.")
@@ -643,8 +826,20 @@ Toggle(P, "Pulo alto", "Jump", function(on)
 		if h then h.JumpPower = 50 end
 	end
 end)
-Slider(P, "Forca do pulo", 50, 300, "JumpVal")
+Slider(P, "Força do pulo", 50, 300, "JumpVal")
 Toggle(P, "Pulo infinito", "InfJump")
+Section(P, "Voo e colisão")
+Toggle(P, "Voar", "Fly", function(on)
+	if on then
+		note(isMobile() and "Voo ligado: use o analogico e os botoes SUBIR / DESCER." or "Voo ligado: WASD, Espaco sobe, Shift desce.")
+	else
+		flyOff()
+	end
+end, "PC: WASD + Espaço/Shift. Celular: botões na tela")
+Slider(P, "Velocidade do voo", 20, 200, "FlyVal")
+Toggle(P, "Noclip", "Noclip", function(on)
+	if not on then restoreClip() end
+end, "Atravessa paredes e objetos")
 Section(P, "Outros")
 Toggle(P, "Anti AFK", "AFK")
 Button(P, "Fechar hub", "FECHAR", RED, function() Gui:Destroy() end)
@@ -660,31 +855,32 @@ pcall(function()
 	Pick(PCt, "Centro do FOV", {"Centro", "Mouse"}, "FOVOrigin")
 	Section(PCt, "Atalhos")
 	BindKey(PCt, "Tecla do painel", "MenuKey")
-	Section(PCt, "Configuracao")
-	Button(PCt, "Salvar configuracao", "SALVAR", AC, function()
+	Section(PCt, "Ajuste do ESP")
+	Slider(PCt, "Ajuste vertical do ESP", -60, 60, "ESPOffset")
+	Info(PCt, "Se as caixas aparecerem um pouco acima ou abaixo dos jogadores no seu aparelho, corrija aqui.", 40)
+	Section(PCt, "Configuração")
+	Button(PCt, "Salvar configuração", "SALVAR", AC, function()
 		local okk = pcall(function() writefile(CFGFILE, HS:JSONEncode(C)) end)
 		note(okk and "Configuracao salva!" or "Seu executor nao permite salvar arquivos.")
 	end)
-	Button(PCt, "Apagar configuracao", "APAGAR", RED, function()
+	Button(PCt, "Apagar configuração", "APAGAR", RED, function()
 		local okk = pcall(function() delfile(CFGFILE) end)
 		note(okk and "Configuracao apagada." or "Nao ha configuracao salva.")
 	end)
-	Info(PCt, "Auto = o script escolhe sozinho. Modo Mouse move o cursor ate o alvo (jogos com mouse livre); modo Camera gira a camera. Em Tecla, segure a tecla para mirar. Esc cancela ao escolher uma tecla.", 62)
+	Info(PCt, "Auto = o script escolhe sozinho. Modo Mouse move o cursor até o alvo (jogos com mouse livre); modo Camera gira a câmera. Em Tecla, segure a tecla para mirar. Esc cancela ao escolher uma tecla.", 62)
 end)
 
 -- aba Discord
 Section(D, "Comunidade")
-local banner = Round(New("Frame", {Size = UDim2.new(1, -6, 0, 96), BackgroundColor3 = PANEL2, BackgroundTransparency = 0.1,
-	BorderSizePixel = 0, LayoutOrder = nextOrder()}, D), 10)
-Stroke(banner, AC, 1, 0.5)
+local banner, bs = Row(D, 96)
 Round(New("ImageLabel", {Size = UDim2.new(0, 64, 0, 64), Position = UDim2.new(0, 14, 0.5, -32), BackgroundTransparency = 1,
 	Image = IMG, ScaleType = Enum.ScaleType.Crop, BorderSizePixel = 0}, banner), 14)
-Label(banner, "Entre no nosso Discord!", UDim2.new(0, 92, 0, 16), UDim2.new(1, -104, 0, 22), FB, 15, W)
-local sub = Label(banner, "Novidades, atualizacoes e suporte do NETRIX HUB. Toque no botao abaixo.", UDim2.new(0, 92, 0, 40),
+Label(banner, "Entre no nosso Discord!", UDim2.new(0, 92, 0, 16), UDim2.new(1, -104, 0, 22), FB, 14, W)
+local sub = Label(banner, "Novidades, atualizações e suporte do NETRIX HUB. Toque no botão abaixo.", UDim2.new(0, 92, 0, 40),
 	UDim2.new(1, -104, 0, 44), FM, 11, SUB)
 sub.TextWrapped = true
 sub.TextYAlignment = Enum.TextYAlignment.Top
-Button(D, "Link: discord.gg/yQyvXYM2CK", "COPIAR", Color3.fromRGB(88, 101, 242), function(b)
+Button(D, "discord.gg/yQyvXYM2CK", "COPIAR", Color3.fromRGB(88, 101, 242), function(b)
 	local copied = false
 	pcall(function() setclipboard(DISCORD) copied = true end)
 	note(copied and "Link do Discord copiado! Cole no navegador para entrar." or DISCORD)
@@ -699,9 +895,21 @@ showTab("Aim")
 -- ==========================================
 local Fl = Round(New("ImageButton", {Size = UDim2.new(0, 56, 0, 56), Position = UDim2.new(0, 16, 0.5, -28), BackgroundTransparency = 1,
 	BorderSizePixel = 0, Image = IMG, ScaleType = Enum.ScaleType.Crop, AutoButtonColor = false, ZIndex = 50}, Gui), 16)
-local function togglePanel() Main.Visible = not Main.Visible end
+
+local function setPanel(show)
+	if show then
+		scale.Scale = 0.92
+		Main.Visible = true
+		tween(scale, {Scale = 1}, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out))
+	else
+		Main.Visible = false
+	end
+end
+local function togglePanel() setPanel(not Main.Visible) end
+
 draggable(Fl, Fl, togglePanel)
-Close.MouseButton1Click:Connect(function() Main.Visible = false end)
+Mini.MouseButton1Click:Connect(function() setPanel(false) end)
+Close.MouseButton1Click:Connect(function() Gui:Destroy() end)
 
 pcall(function()
 	keep(UIS.InputBegan:Connect(function(i, gp)
@@ -743,14 +951,16 @@ local function safeStep(dt)
 	end
 end
 
-local bound = pcall(function() RS:BindToRenderStep("NetrixHubV10", Enum.RenderPriority.Last.Value, safeStep) end)
+local bound = pcall(function() RS:BindToRenderStep(GUI_NAME, Enum.RenderPriority.Last.Value, safeStep) end)
 if not bound then keep(RS.RenderStepped:Connect(safeStep)) end
 
 Gui.Destroying:Connect(function()
-	if bound then pcall(function() RS:UnbindFromRenderStep("NetrixHubV10") end) end
+	if bound then pcall(function() RS:UnbindFromRenderStep(GUI_NAME) end) end
 	for _, c in ipairs(conns) do pcall(function() c:Disconnect() end) end
 	for _, o in pairs(ESP) do killObj(o) end
 	if fov then pcall(function() fov:Remove() end) end
+	flyOff()
+	restoreClip()
 	local h = hum()
 	if h then
 		if C.Walk then h.WalkSpeed = 16 end
