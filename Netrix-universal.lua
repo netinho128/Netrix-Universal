@@ -17,7 +17,7 @@ local TS = game:GetService("TweenService")
 local LP = Players.LocalPlayer
 local Cam = WS.CurrentCamera
 
-local IMG = "rbxassetid://99262930883927"
+local IMG = "rbxassetid://71668099351887"
 local DISCORD = "https://discord.gg/yQyvXYM2CK"
 local YOUTUBE_NAME = "Netrix _ OFC"
 local VERSION = "v12"
